@@ -109,14 +109,14 @@ export default function App() {
     }
   };
   //NUEVA LINEA HECHA POR MI
-  const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.secuence)) : 0;
+  const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.sequence)) : 0;
   // Animation Loop
   useEffect(() => {
     let interval;
     if (isPlaying) {
       interval = setInterval(() => {
         setCurrentStep((prev) => {
-          if (prev >= boxes.length) {
+          if (prev >= totalBlocks) {
             setIsPlaying(false);
             return prev;
           }
@@ -125,7 +125,7 @@ export default function App() {
       }, 1500); // Slower for clarity
     }
     return () => clearInterval(interval);
-  }, [isPlaying, boxes.length]);
+  }, [isPlaying, totalBlocks]);
 
   const handleSliderChange = (e) => {
     const val = parseInt(e.target.value);
@@ -240,13 +240,13 @@ export default function App() {
               <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-500 to-yellow-500 transition-all duration-300"
-                  style={{ width: `${(currentStep / Math.max(1, boxes.length)) * 100}%` }}
+                  style={{ width: `${(currentStep / Math.max(1, totalBlocks)) * 100}%` }}
                 />
               </div>
               <input
                 type="range"
                 min="0"
-                max={boxes.length}
+                max={totalBlocks}
                 value={currentStep}
                 onChange={handleSliderChange}
                 className="absolute inset-0 w-full h-8 opacity-0 cursor-pointer"
