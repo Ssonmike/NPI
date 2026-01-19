@@ -51,7 +51,8 @@ function normalizeBlock(raw) {
         quantityX, quantityY, quantityZ,
         packetId: get('packageId'),
         blockType: get('blockType'),
-        serialNumber: get('serialNumber') || get('productReference') || 'UNKNOWN-PRODUCT'
+        serialNumber: get('serialNumber') || get('productReference') || 'UNKNOWN-PRODUCT',
+        pickingLocation: get('pickingLocation') || 'UNKNOWN-LOCATION'
     };
 }
 
@@ -116,6 +117,7 @@ export function generateSequence(input) {
 
         // Generate individual boxes for this block
         const blockBoxes = [];
+        const totalBoxesInBlock = quantityX * quantityY * quantityZ;
 
         for (let z = 0; z < quantityZ; z++) {
             for (let y = 0; y < quantityY; y++) {
@@ -139,6 +141,8 @@ export function generateSequence(input) {
                         blockId: block.id,
                         blockUuid: block.packetId, // Useful for grouping
                         sequence: block.sequence,
+                        serialNumber: block.serialNumber,
+                        pickingLocation: block.pickingLocation,
 
                         // Logical Stats
                         logical: {
@@ -151,8 +155,9 @@ export function generateSequence(input) {
                             x_mm: Math.round((startX + x * boxWidth) * 1000),
                             y_mm: Math.round((startY + y * boxDepth) * 1000),
                             z_mm: Math.round((startZ + z * boxHeight) * 1000),
-                            totalBoxesInBlock: quantityX * quantityY * quantityZ,
-                            stepDescription: `I placed ${quantityX * quantityY * quantityZ} box${(quantityX * quantityY * quantityZ) !== 1 ? 'es' : ''} of ${block.serialNumber}`
+                            totalBoxesInBlock: totalBoxesInBlock,
+                            pickingLocation: block.pickingLocation,
+                            stepDescription: `I placed ${totalBoxesInBlock} box${totalBoxesInBlock !== 1 ? 'es' : ''} of ${block.serialNumber}`
                         },
 
                         // Render Props

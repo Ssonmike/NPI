@@ -184,8 +184,8 @@ export default function App() {
             <button
               onClick={() => handlePalletChange('pallet1')}
               className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet1'
-                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
                 }`}
             >
               Pallet 1
@@ -193,8 +193,8 @@ export default function App() {
             <button
               onClick={() => handlePalletChange('pallet2')}
               className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet2'
-                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
                 }`}
             >
               Pallet 2
@@ -208,6 +208,39 @@ export default function App() {
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">{currentPalletConfig.displayName}</h1>
             <p className="text-sm text-gray-300 mt-1">{resourceInfo?.name || '---'}</p>
+
+            {/* Picking Location Display */}
+            {currentBox && currentBox.display?.pickingLocation && (
+              <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg
+                    className="w-4 h-4 text-emerald-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">
+                    Picking From
+                  </span>
+                </div>
+                <div className="font-mono text-2xl font-bold text-emerald-400 tracking-wider">
+                  {currentBox.display.pickingLocation}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
