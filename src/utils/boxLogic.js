@@ -50,7 +50,8 @@ function normalizeBlock(raw) {
         z1, z2,
         quantityX, quantityY, quantityZ,
         packetId: get('packageId'),
-        blockType: get('blockType')
+        blockType: get('blockType'),
+        serialNumber: get('serialNumber') || get('productReference') || 'UNKNOWN-PRODUCT'
     };
 }
 
@@ -150,7 +151,8 @@ export function generateSequence(input) {
                             x_mm: Math.round((startX + x * boxWidth) * 1000),
                             y_mm: Math.round((startY + y * boxDepth) * 1000),
                             z_mm: Math.round((startZ + z * boxHeight) * 1000),
-                            stepDescription: `Coloque ${quantityX * quantityY * quantityZ} cajas en [${Math.round(startX * 1000)}, ${Math.round(startY * 1000)}]`
+                            totalBoxesInBlock: quantityX * quantityY * quantityZ,
+                            stepDescription: `I placed ${quantityX * quantityY * quantityZ} box${(quantityX * quantityY * quantityZ) !== 1 ? 'es' : ''} of ${block.serialNumber}`
                         },
 
                         // Render Props

@@ -8,7 +8,7 @@ const DEFAULT_JSON = `{
    "resource":{
       "pallet":{
          "maxHeight":2300,
-         "name":"IILH5541UHS-B2 - STOCKPALLET",
+         "name":" - ",
          "description":"",
          "weightUom":"kg",
          "sizeUom":"mm",
@@ -28,6 +28,7 @@ const DEFAULT_JSON = `{
    "loadInstructions":[
       {
          "id":"71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+         "serialNumber": "IIXUB2493HSU-B6",
          "x1":25,
          "x2":1655,
          "y1":150,
@@ -45,6 +46,7 @@ const DEFAULT_JSON = `{
       },
       {
          "id":"714c2a19-231f-48d6-9ca1-f2b820c5def8",
+         "serialNumber": "IITF3239MSC-B1AG",
          "x1":25,
          "x2":2125,
          "y1":335,
@@ -62,6 +64,7 @@ const DEFAULT_JSON = `{
       },
       {
          "id":"cee2def4-55c8-460a-94a4-7a16cd4883bd",
+         "serialNumber": "IIXUB2792QSU-B6",
          "x1":25,
          "x2":1405,
          "y1":560,
@@ -158,7 +161,7 @@ export default function App() {
               <BoxIcon className="text-orange-500" size={20} />
               <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Work Order</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">{resourceInfo?.id || 'NO LOADED'}</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Pallet 1</h1>
             <p className="text-sm text-gray-300 mt-1">{resourceInfo?.name || '---'}</p>
           </div>
         </div>
@@ -171,11 +174,11 @@ export default function App() {
             {currentBox ? (
               <div className="flex-1">
                 <div className="text-xs text-orange-400 uppercase tracking-widest font-bold mb-2">
-                  Paso {currentBox.display?.stepSequence || currentStep} de {totalBlocks}
+                  Block {currentBox.display?.stepSequence || currentStep} of {totalBlocks}
                 </div>
                 <div className="text-2xl font-light text-white">
                   <span className="font-bold text-white">{currentBox.display?.stepDescription}</span>
-                  <span className="text-gray-400 ml-2">hasta altura {currentBox.display.z_mm + Math.round(currentBox.size[1] * 1000)} mm</span>
+                  <span className="text-gray-400 ml-2">to height {currentBox.display.z_mm + Math.round(currentBox.size[1] * 1000)} mm</span>
                 </div>
               </div>
             ) : isComplete ? (
@@ -183,7 +186,7 @@ export default function App() {
                 <span>✓</span> Carga Completa
               </div>
             ) : (
-              <div className="text-xl text-gray-400">Listo para iniciar</div>
+              <div className="text-xl text-gray-400">Ready to start</div>
             )}
 
             {/* Coordinates Widget */}
@@ -287,7 +290,7 @@ export default function App() {
           onClick={handleParse}
           className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition"
         >
-          Recalcular Modelo
+          Recalculate Model
         </button>
       </div>
     </div>
