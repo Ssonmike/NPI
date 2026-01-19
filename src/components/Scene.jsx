@@ -29,11 +29,12 @@ export function Scene({ boxes, currentStep, pallet }) {
                         // currentStep is the number of boxes Placed + Current.
                         // If currentStep = 1, box 1 is 'current'.
 
-                        if (box.sequenceIndex < currentStep) {
+                        if (box.sequence < currentStep) {
                             status = 'placed';
-                        } else if (box.sequenceIndex === currentStep) {
+                        } else if (box.sequence === currentStep) {
                             status = 'current';
                         } else {
+                            /*
                             // Future. Check if same block as current box.
                             // If we are at step 0 (nothing placed), current is box 1.
                             // If we are at step N, current is box N.
@@ -47,6 +48,12 @@ export function Scene({ boxes, currentStep, pallet }) {
                                 status = 'future-same-block';
                             } else {
                                 status = 'future-other-block';
+                            }
+                                */
+                            if (box.sequence === currentStep + 1) {
+                                status = 'future-same-block';    // Green - next block
+                            } else {
+                                status = 'future-other-block';   // Transparent - future blocks
                             }
                         }
 

@@ -108,7 +108,8 @@ export default function App() {
       alert("Invalid JSON: " + e.message);
     }
   };
-
+  //NUEVA LINEA HECHA POR MI
+  const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.secuence)) : 0;
   // Animation Loop
   useEffect(() => {
     let interval;
@@ -133,9 +134,15 @@ export default function App() {
   };
 
   // derived state
+  const currentBlockBoxes = currentStep > 0 ? boxes.filter(b => b.sequence === currentStep) : [];
+  const currentBox = currentBlockBoxes.length > 0 ? currentBlockBoxes[0] : null;
+  const nextBox = currentStep < totalBlocks ? boxes.find(b => b.sequence === currentStep + 1) : null;
+  const isComplete = currentStep === totalBlocks && totalBlocks > 0;
+  /*
   const currentBox = currentStep > 0 && currentStep <= boxes.length ? boxes[currentStep - 1] : null;
   const nextBox = currentStep < boxes.length ? boxes[currentStep] : null;
   const isComplete = currentStep === boxes.length && boxes.length > 0;
+*/
 
   return (
     <div className="flex h-screen w-screen flex-col bg-gray-900 text-white overflow-hidden font-sans">
@@ -164,7 +171,7 @@ export default function App() {
             {currentBox ? (
               <div className="flex-1">
                 <div className="text-xs text-orange-400 uppercase tracking-widest font-bold mb-2">
-                  Paso {currentBox.display?.stepSequence || currentStep} de {boxes.length}
+                  Paso {currentBox.display?.stepSequence || currentStep} de {totalBlocks}
                 </div>
                 <div className="text-2xl font-light text-white">
                   <span className="font-bold text-white">{currentBox.display?.stepDescription}</span>
