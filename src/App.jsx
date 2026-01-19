@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Scene } from './components/Scene';
 import { generateSequence } from './utils/boxLogic';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings, Box as BoxIcon, Info } from 'lucide-react';
+import { PALLET_CONFIGURATIONS, getPalletById } from './data/palletConfigurations';
 
 const DEFAULT_JSON = `{
    "resourceId":"PAL_IITE8612MIS-B3AG",
@@ -84,7 +85,8 @@ const DEFAULT_JSON = `{
 }`;
 
 export default function App() {
-  const [jsonInput, setJsonInput] = useState(DEFAULT_JSON);
+  const [selectedPalletId, setSelectedPalletId] = useState('pallet1');
+  const [jsonInput, setJsonInput] = useState(JSON.stringify(PALLET_CONFIGURATIONS.pallet1.data, null, 2));
   const [boxes, setBoxes] = useState([]);
   const [pallet, setPallet] = useState(null);
   const [resourceInfo, setResourceInfo] = useState(null);
@@ -111,6 +113,25 @@ export default function App() {
       alert("Invalid JSON: " + e.message);
     }
   };
+
+  const handlePalletChange = (palletId) => {
+    setSelectedPalletId(palletId);
+    const palletConfig = getPalletById(palletId);
+    const newJson = JSON.stringify(palletConfig.data, null, 2);
+    setJsonInput(newJson);
+
+    try {
+      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(newJson);
+      setBoxes(generatedBoxes);
+      setPallet(parsedPallet);
+      setResourceInfo(resource);
+      setCurrentStep(0);
+      setIsPlaying(false);
+    } catch (e) {
+      console.error("Error loading pallet:", e);
+    }
+  };
+
   //NUEVA LINEA HECHA POR MI
   const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.sequence)) : 0;
   // Animation Loop
@@ -141,6 +162,8 @@ export default function App() {
   const currentBox = currentBlockBoxes.length > 0 ? currentBlockBoxes[0] : null;
   const nextBox = currentStep < totalBlocks ? boxes.find(b => b.sequence === currentStep + 1) : null;
   const isComplete = currentStep === totalBlocks && totalBlocks > 0;
+
+  const currentPalletConfig = getPalletById(selectedPalletId);
   /*
   const currentBox = currentStep > 0 && currentStep <= boxes.length ? boxes[currentStep - 1] : null;
   const nextBox = currentStep < boxes.length ? boxes[currentStep] : null;
@@ -155,13 +178,35 @@ export default function App() {
         <Scene boxes={boxes} currentStep={currentStep} pallet={pallet} />
 
         {/* Top Header - Work Order Info */}
-        <div className="absolute top-6 left-6 flex flex-col gap-2">
+        <div className="absolute top-6 left-6 flex flex-col gap-3">
+          {/* Pallet Selector Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handlePalletChange('pallet1')}
+              className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet1'
+                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                }`}
+            >
+              Pallet 1
+            </button>
+            <button
+              onClick={() => handlePalletChange('pallet2')}
+              className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet2'
+                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                }`}
+            >
+              Pallet 2
+            </button>
+          </div>
+
           <div className="bg-gray-800/80 backdrop-blur border border-gray-600 rounded-lg p-4 shadow-xl">
             <div className="flex items-center gap-3 mb-1">
               <BoxIcon className="text-orange-500" size={20} />
               <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Work Order</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Pallet 1</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">{currentPalletConfig.displayName}</h1>
             <p className="text-sm text-gray-300 mt-1">{resourceInfo?.name || '---'}</p>
           </div>
         </div>
