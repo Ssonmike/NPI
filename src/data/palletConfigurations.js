@@ -166,7 +166,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "WxLxH",
                     blockType: "Cube",
                     packageId: "pkg-side-layer-1",
-                    sequence: 1
+                    sequence: 3
                 },
                 {
                     id: "block-4-orange-layer2-right",
@@ -185,7 +185,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "WxLxH",
                     blockType: "Cube",
                     packageId: "pkg-side-layer-2",
-                    sequence: 3
+                    sequence: 4
                 },
                 {
                     id: "block-5-yellow-layer",
@@ -204,7 +204,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-mid-layer-yellow",
-                    sequence: 4
+                    sequence: 5
                 },
                 {
                     id: "block-6-blue-layer",
@@ -223,7 +223,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 4
+                    sequence: 6
                 },
                 {
                     id: "block-6-blue-layer",
@@ -242,7 +242,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 4
+                    sequence: 7
                 },
                 {
                     id: "block-6-blue-layer",
@@ -261,7 +261,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 5
+                    sequence: 8
                 },
                 {
                     id: "block-6-blue-layer",
@@ -280,7 +280,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 6
+                    sequence: 9
                 },
                 {
                     id: "block-6-blue-layer",
@@ -299,7 +299,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 6
+                    sequence: 10
                 },
                 {
                     id: "block-6-blue-layer",
@@ -318,7 +318,7 @@ export const PALLET_CONFIGURATIONS = {
                     orientation: "LxWxH",
                     blockType: "Cube",
                     packageId: "pkg-top-layer-blue",
-                    sequence: 7
+                    sequence: 11
                 }
             ]
         }

@@ -12,3 +12,41 @@ body,
   overflow: hidden;
   /* Prevent scroll */
 }
+
+/* Safe area support for mobile devices with notches and navigation bars */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Prevent iOS Safari bounce scrolling */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Improve touch interactions on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Custom utility for safe padding on mobile control panels */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(6rem, env(safe-area-inset-bottom, 6rem));
+  }
+
+  .mb-safe {
+    margin-bottom: max(6rem, env(safe-area-inset-bottom, 6rem));
+  }
+
+  /* Ensure bottom panels have enough space on mobile */
+  @media (max-width: 768px) {
+    .mobile-bottom-panel {
+      padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem));
+    }
+  }
+}

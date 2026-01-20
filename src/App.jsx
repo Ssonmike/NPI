@@ -1,88 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Scene } from './components/Scene';
 import { generateSequence } from './utils/boxLogic';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings, Box as BoxIcon, Info, X } from 'lucide-react';
 import { PALLET_CONFIGURATIONS, getPalletById } from './data/palletConfigurations';
-
-const DEFAULT_JSON = `{
-   "resourceId":"PAL_IITE8612MIS-B3AG",
-   "resource":{
-      "pallet":{
-         "maxHeight":2300,
-         "name":" - ",
-         "description":"",
-         "weightUom":"kg",
-         "sizeUom":"mm",
-         "length":2150,
-         "width":1100,
-         "height":130,
-         "volume":0.307,
-         "volumeUom":"m3",
-         "weight":15,
-         "maxWeight":2000,
-         "maxLoadWeight":1985,
-         "externalReferences":{
-            
-         }
-      }
-   },
-   "loadInstructions":[
-      {
-         "id":"71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
-         "serialNumber": "IIXUB2493HSU-B6",
-         "x1":25,
-         "x2":1655,
-         "y1":150,
-         "y2":335,
-         "z1":0,
-         "z2":1010,
-         "quantityX":1,
-         "quantityY":1,
-         "quantityZ":1,
-         "sizeUom":"mm",
-         "orientation":"LxW",
-         "blockType":"Cube",
-         "packageId":"02546ba5-be55-402c-80cf-201ea75052e5",
-         "sequence":1
-      },
-      {
-         "id":"714c2a19-231f-48d6-9ca1-f2b820c5def8",
-         "serialNumber": "IITF3239MSC-B1AG",
-         "x1":25,
-         "x2":2125,
-         "y1":335,
-         "y2":560,
-         "z1":0,
-         "z2":1280,
-         "quantityX":1,
-         "quantityY":1,
-         "quantityZ":1,
-         "sizeUom":"mm",
-         "orientation":"LxW",
-         "blockType":"Cube",
-         "packageId":"d3bb422c-bbe2-406d-a16e-bbc082103a1a",
-         "sequence":2
-      },
-      {
-         "id":"cee2def4-55c8-460a-94a4-7a16cd4883bd",
-         "serialNumber": "IIXUB2792QSU-B6",
-         "x1":25,
-         "x2":1405,
-         "y1":560,
-         "y2":950,
-         "z1":0,
-         "z2":845,
-         "quantityX":1,
-         "quantityY":3,
-         "quantityZ":1,
-         "sizeUom":"mm",
-         "orientation":"LxW",
-         "blockType":"Cube",
-         "packageId":"f7562342-fa38-4b92-8f21-1b381aae9235",
-         "sequence":3
-      }
-   ]
-}`;
 
 export default function App() {
   const [selectedPalletId, setSelectedPalletId] = useState('pallet1');
@@ -93,28 +13,34 @@ export default function App() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Closed by default for immersion
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Calculate total blocks
+  const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.sequence)) : 0;
 
   // Initialize from default JSON
   useEffect(() => {
     handleParse();
   }, []);
 
-  const handleParse = () => {
+  const handleParse = useCallback(() => {
     try {
       const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(jsonInput);
       setBoxes(generatedBoxes);
       setPallet(parsedPallet);
       setResourceInfo(resource);
-
-      setCurrentStep(0);
+      setCurrentStep(0); // Reset to start
       setIsPlaying(false);
+
+      console.log('Parsed boxes:', generatedBoxes.length);
+      console.log('Unique sequences:', [...new Set(generatedBoxes.map(b => b.sequence))].sort((a, b) => a - b));
     } catch (e) {
       alert("Invalid JSON: " + e.message);
     }
-  };
+  }, [jsonInput]);
 
-  const handlePalletChange = (palletId) => {
+  const handlePalletChange = useCallback((palletId) => {
+    console.log('Changing to pallet:', palletId);
     setSelectedPalletId(palletId);
     const palletConfig = getPalletById(palletId);
     const newJson = JSON.stringify(palletConfig.data, null, 2);
@@ -125,50 +51,71 @@ export default function App() {
       setBoxes(generatedBoxes);
       setPallet(parsedPallet);
       setResourceInfo(resource);
-      setCurrentStep(0);
+      setCurrentStep(0); // CRITICAL: Reset step to 0
       setIsPlaying(false);
+
+      console.log('Loaded pallet:', palletId);
+      console.log('Total boxes:', generatedBoxes.length);
+      console.log('Sequences:', [...new Set(generatedBoxes.map(b => b.sequence))].sort((a, b) => a - b));
     } catch (e) {
       console.error("Error loading pallet:", e);
     }
-  };
+  }, []);
 
-  //NUEVA LINEA HECHA POR MI
-  const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.sequence)) : 0;
-  // Animation Loop
+  // Animation Loop for AUTO mode
   useEffect(() => {
-    let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentStep((prev) => {
-          if (prev >= totalBlocks) {
-            setIsPlaying(false);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1500); // Slower for clarity
-    }
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => {
+        if (prev >= totalBlocks) {
+          console.log("Auto sequence complete at:", prev);
+          setIsPlaying(false);
+          return prev;
+        }
+        console.log(`Auto stepping: ${prev} -> ${prev + 1} (total: ${totalBlocks})`);
+        return prev + 1;
+      });
+    }, 1500);
+
     return () => clearInterval(interval);
   }, [isPlaying, totalBlocks]);
 
   const handleSliderChange = (e) => {
     const val = parseInt(e.target.value);
+    console.log('Slider changed to:', val);
     setCurrentStep(val);
     setIsPlaying(false);
   };
 
-  // derived state
+  const handleNext = () => {
+    setCurrentStep(prev => {
+      const next = Math.min(totalBlocks, prev + 1);
+      console.log(`Next: ${prev} -> ${next}`);
+      return next;
+    });
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => {
+      const previous = Math.max(0, prev - 1);
+      console.log(`Previous: ${prev} -> ${previous}`);
+      return previous;
+    });
+  };
+
+  // Derived state
   const currentBlockBoxes = currentStep > 0 ? boxes.filter(b => b.sequence === currentStep) : [];
   const currentBox = currentBlockBoxes.length > 0 ? currentBlockBoxes[0] : null;
   const nextBox = currentStep < totalBlocks ? boxes.find(b => b.sequence === currentStep + 1) : null;
   const isComplete = currentStep === totalBlocks && totalBlocks > 0;
 
   const currentPalletConfig = getPalletById(selectedPalletId);
-  /*
-  const currentBox = currentStep > 0 && currentStep <= boxes.length ? boxes[currentStep - 1] : null;
-  const nextBox = currentStep < boxes.length ? boxes[currentStep] : null;
-  const isComplete = currentStep === boxes.length && boxes.length > 0;
-*/
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Current state:', { currentStep, totalBlocks, boxesCount: boxes.length });
+  }, [currentStep, totalBlocks, boxes.length]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-gray-900 text-white overflow-hidden font-sans">
@@ -177,10 +124,10 @@ export default function App() {
       <div className="flex-1 relative w-full h-full">
         <Scene boxes={boxes} currentStep={currentStep} pallet={pallet} />
 
-        {/* Top Header - Work Order Info - Responsive Container */}
+        {/* Top Header - Work Order Info */}
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex flex-col gap-3 pointer-events-none z-10">
 
-          {/* Pallet Selector - Horizontal Scroll on Mobile */}
+          {/* Pallet Selector */}
           <div className="pointer-events-auto flex items-start">
             <div className="flex gap-2 overflow-x-auto max-w-full pb-2 md:pb-0 scrollbar-hide mask-fade-right">
               <button
@@ -204,7 +151,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Info Card - Collapsible or Compact on Mobile */}
+          {/* Info Card */}
           <div className="pointer-events-auto bg-gray-800/90 backdrop-blur border border-gray-600 rounded-lg p-3 md:p-4 shadow-xl w-full max-w-[calc(100vw-32px)] md:max-w-sm transition-all">
             <div className="flex items-center gap-3 mb-1">
               <BoxIcon className="text-orange-500" size={18} />
@@ -248,15 +195,16 @@ export default function App() {
           </div>
         </div>
 
-        {/* Floating Instruction Panel - Bottom Sheet on Mobile */}
-        <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:bottom-10 md:transform md:-translate-x-1/2 
+        {/* Floating Instruction Panel */}
+        <div className="mobile-bottom-panel absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:bottom-10 md:transform md:-translate-x-1/2 
                         bg-gray-800/95 backdrop-blur border-t md:border border-gray-600 
                         p-4 md:p-6 
                         rounded-t-2xl md:rounded-2xl 
                         shadow-2xl 
                         w-full md:w-[800px] 
                         flex flex-col gap-4 md:gap-6
-                        z-20 max-h-[45vh] md:max-h-none overflow-y-auto md:overflow-visible touch-pan-y">
+                        z-20 max-h-[45vh] md:max-h-none overflow-y-auto md:overflow-visible touch-pan-y"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
 
           {/* Dynamic Instructions */}
           <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center border-b border-gray-700 pb-3 md:pb-4">
@@ -264,7 +212,7 @@ export default function App() {
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <div className="text-[10px] md:text-xs text-orange-400 uppercase tracking-widest font-bold">
-                    Block {currentBox.display?.stepSequence || currentStep} of {totalBlocks}
+                    Block {currentStep} of {totalBlocks}
                   </div>
                   {/* Mobile Coordinates (Compact) */}
                   <div className="flex gap-2 md:hidden">
@@ -306,32 +254,37 @@ export default function App() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col-reverse md:flex-row items-center gap-4 md:gap-6">
+          <div className="flex flex-col-reverse md:flex-row items-center gap-4 md:gap-6 pb-safe">
             <div className="flex gap-2 w-full md:w-auto">
               <button
-                onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
-                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[44px]"
+                onClick={handlePrevious}
+                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[48px] active:bg-gray-500"
+                disabled={currentStep === 0}
               >
                 <SkipBack size={20} />
               </button>
 
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className={`flex-[2] md:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3 rounded-xl font-bold transition text-white shadow-lg border border-white/10 min-h-[44px] ${isPlaying ? 'bg-orange-600 hover:bg-orange-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                onClick={() => {
+                  console.log('Auto button clicked. Current playing:', isPlaying);
+                  setIsPlaying(!isPlaying);
+                }}
+                className={`flex-[2] md:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3 rounded-xl font-bold transition text-white shadow-lg border border-white/10 min-h-[48px] ${isPlaying ? 'bg-orange-600 hover:bg-orange-500 active:bg-orange-400' : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-400'}`}
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                 <span>{isPlaying ? "PAUSAR" : "AUTO"}</span>
               </button>
 
               <button
-                onClick={() => setCurrentStep(prev => Math.min(totalBlocks, prev + 1))}
-                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[44px]"
+                onClick={handleNext}
+                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[48px] active:bg-gray-500"
+                disabled={currentStep >= totalBlocks}
               >
                 <SkipForward size={20} />
               </button>
             </div>
 
-            <div className="flex-1 flex flex-col gap-1 w-full">
+            <div className="flex-1 flex flex-col gap-1 w-full relative">
               <div className="flex justify-between text-[10px] md:text-xs text-gray-400 font-mono">
                 <span>START</span>
                 <span>PROGRESS</span>
@@ -342,15 +295,15 @@ export default function App() {
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-500 to-yellow-500 transition-all duration-300"
                   style={{ width: `${(currentStep / Math.max(1, totalBlocks)) * 100}%` }}
                 />
+                <input
+                  type="range"
+                  min="0"
+                  max={totalBlocks}
+                  value={currentStep}
+                  onChange={handleSliderChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
               </div>
-              <input
-                type="range"
-                min="0"
-                max={totalBlocks}
-                value={currentStep}
-                onChange={handleSliderChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              />
             </div>
           </div>
         </div>
@@ -364,7 +317,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Sidebar (Input) - Full width on Mobile */}
+      {/* Sidebar (Input) */}
       <div
         className={`fixed top-0 right-0 bottom-0 
           w-full md:w-[450px] 

@@ -98,8 +98,20 @@ export function generateSequence(input) {
     // Sort instructions by sequence strictly
     instructions.sort((a, b) => (Number(a.sequence) || 0) - (Number(b.sequence) || 0));
 
+    // Re-index sequences to be consecutive (1, 2, 3...) removing gaps
+    const uniqueSequences = [...new Set(instructions.map(i => Number(i.sequence) || 0))].sort((a, b) => a - b);
+    const sequenceMap = new Map();
+    uniqueSequences.forEach((seq, index) => {
+        sequenceMap.set(seq, index + 1);
+    });
+
     instructions.forEach((rawBlock, blockIndex) => {
         const block = normalizeBlock(rawBlock);
+
+        // Override sequence with strict partial-ordering
+        const mappedSequence = sequenceMap.get(block.sequence) || (blockIndex + 1);
+        block.originalSequence = block.sequence;
+        block.sequence = mappedSequence;
 
         const { x1, x2, y1, y2, z1, z2, quantityX, quantityY, quantityZ } = block;
 
