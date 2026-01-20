@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Scene } from './components/Scene';
 import { generateSequence } from './utils/boxLogic';
-import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings, Box as BoxIcon, Info } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings, Box as BoxIcon, Info, X } from 'lucide-react';
 import { PALLET_CONFIGURATIONS, getPalletById } from './data/palletConfigurations';
 
 const DEFAULT_JSON = `{
@@ -174,45 +174,49 @@ export default function App() {
     <div className="flex h-screen w-screen flex-col bg-gray-900 text-white overflow-hidden font-sans">
 
       {/* 3D Scene Area */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative w-full h-full">
         <Scene boxes={boxes} currentStep={currentStep} pallet={pallet} />
 
-        {/* Top Header - Work Order Info */}
-        <div className="absolute top-6 left-6 flex flex-col gap-3">
-          {/* Pallet Selector Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePalletChange('pallet1')}
-              className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet1'
-                ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
-                }`}
-            >
-              Pallet 1
-            </button>
-            <button
-              onClick={() => handlePalletChange('pallet2')}
-              className={`px-6 py-3 rounded-lg font-bold transition border-2 ${selectedPalletId === 'pallet2'
-                ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
-                }`}
-            >
-              Pallet 2
-            </button>
+        {/* Top Header - Work Order Info - Responsive Container */}
+        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex flex-col gap-3 pointer-events-none z-10">
+
+          {/* Pallet Selector - Horizontal Scroll on Mobile */}
+          <div className="pointer-events-auto flex items-start">
+            <div className="flex gap-2 overflow-x-auto max-w-full pb-2 md:pb-0 scrollbar-hide mask-fade-right">
+              <button
+                onClick={() => handlePalletChange('pallet1')}
+                className={`flex-shrink-0 px-4 py-3 md:px-6 md:py-3 rounded-lg font-bold transition border-2 text-sm md:text-base min-w-[100px] md:min-w-0 ${selectedPalletId === 'pallet1'
+                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                  }`}
+              >
+                Pallet 1
+              </button>
+              <button
+                onClick={() => handlePalletChange('pallet2')}
+                className={`flex-shrink-0 px-4 py-3 md:px-6 md:py-3 rounded-lg font-bold transition border-2 text-sm md:text-base min-w-[100px] md:min-w-0 ${selectedPalletId === 'pallet2'
+                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
+                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                  }`}
+              >
+                Pallet 2
+              </button>
+            </div>
           </div>
 
-          <div className="bg-gray-800/80 backdrop-blur border border-gray-600 rounded-lg p-4 shadow-xl">
+          {/* Info Card - Collapsible or Compact on Mobile */}
+          <div className="pointer-events-auto bg-gray-800/90 backdrop-blur border border-gray-600 rounded-lg p-3 md:p-4 shadow-xl w-full max-w-[calc(100vw-32px)] md:max-w-sm transition-all">
             <div className="flex items-center gap-3 mb-1">
-              <BoxIcon className="text-orange-500" size={20} />
-              <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Work Order</span>
+              <BoxIcon className="text-orange-500" size={18} />
+              <span className="text-[10px] md:text-xs uppercase tracking-widest text-gray-400 font-bold">Work Order</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">{currentPalletConfig.displayName}</h1>
-            <p className="text-sm text-gray-300 mt-1">{resourceInfo?.name || '---'}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate">{currentPalletConfig.displayName}</h1>
+            <p className="text-xs md:text-sm text-gray-300 mt-1 truncate">{resourceInfo?.name || '---'}</p>
 
             {/* Picking Location Display */}
             {currentBox && currentBox.display?.pickingLocation && (
-              <div className="mt-3 pt-3 border-t border-gray-700">
-                <div className="flex items-center gap-2 mb-1">
+              <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <svg
                     className="w-4 h-4 text-emerald-400"
                     fill="none"
@@ -232,11 +236,11 @@ export default function App() {
                       d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">
+                  <span className="text-[10px] md:text-xs uppercase tracking-widest text-gray-400 font-bold hidden xs:inline">
                     Picking From
                   </span>
                 </div>
-                <div className="font-mono text-2xl font-bold text-emerald-400 tracking-wider">
+                <div className="font-mono text-xl md:text-2xl font-bold text-emerald-400 tracking-wider">
                   {currentBox.display.pickingLocation}
                 </div>
               </div>
@@ -244,32 +248,47 @@ export default function App() {
           </div>
         </div>
 
-        {/* Floating Instruction Panel */}
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800/90 backdrop-blur border border-gray-600 p-6 rounded-2xl shadow-2xl w-[800px] flex flex-col gap-6">
+        {/* Floating Instruction Panel - Bottom Sheet on Mobile */}
+        <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:bottom-10 md:transform md:-translate-x-1/2 
+                        bg-gray-800/95 backdrop-blur border-t md:border border-gray-600 
+                        p-4 md:p-6 
+                        rounded-t-2xl md:rounded-2xl 
+                        shadow-2xl 
+                        w-full md:w-[800px] 
+                        flex flex-col gap-4 md:gap-6
+                        z-20 max-h-[45vh] md:max-h-none overflow-y-auto md:overflow-visible touch-pan-y">
 
           {/* Dynamic Instructions */}
-          <div className="flex justify-between items-center border-b border-gray-700 pb-4">
+          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center border-b border-gray-700 pb-3 md:pb-4">
             {currentBox ? (
               <div className="flex-1">
-                <div className="text-xs text-orange-400 uppercase tracking-widest font-bold mb-2">
-                  Block {currentBox.display?.stepSequence || currentStep} of {totalBlocks}
+                <div className="flex justify-between items-center mb-1">
+                  <div className="text-[10px] md:text-xs text-orange-400 uppercase tracking-widest font-bold">
+                    Block {currentBox.display?.stepSequence || currentStep} of {totalBlocks}
+                  </div>
+                  {/* Mobile Coordinates (Compact) */}
+                  <div className="flex gap-2 md:hidden">
+                    <span className="text-xs font-mono text-orange-400">X:{currentBox.display.x_mm}</span>
+                    <span className="text-xs font-mono text-blue-400">Y:{currentBox.display.y_mm}</span>
+                    <span className="text-xs font-mono text-green-400">Z:{currentBox.display.z_mm}</span>
+                  </div>
                 </div>
-                <div className="text-2xl font-light text-white">
-                  <span className="font-bold text-white">{currentBox.display?.stepDescription}</span>
-                  <span className="text-gray-400 ml-2">to height {currentBox.display.z_mm + Math.round(currentBox.size[1] * 1000)} mm</span>
+                <div className="text-lg md:text-2xl font-light text-white leading-tight">
+                  <span className="font-bold text-white block md:inline">{currentBox.display?.stepDescription}</span>
+                  <span className="text-sm md:text-base text-gray-400 md:ml-2 block md:inline">to height {currentBox.display.z_mm + Math.round(currentBox.size[1] * 1000)} mm</span>
                 </div>
               </div>
             ) : isComplete ? (
-              <div className="text-2xl font-bold text-green-400 flex items-center gap-2">
+              <div className="text-xl md:text-2xl font-bold text-green-400 flex items-center gap-2">
                 <span>✓</span> Carga Completa
               </div>
             ) : (
-              <div className="text-xl text-gray-400">Ready to start</div>
+              <div className="text-lg md:text-xl text-gray-400">Ready to start</div>
             )}
 
-            {/* Coordinates Widget */}
+            {/* Desktop Coordinates Widget */}
             {currentBox && (
-              <div className="flex gap-4 ml-8 bg-black/40 p-3 rounded-lg border border-gray-700">
+              <div className="hidden md:flex gap-4 ml-8 bg-black/40 p-3 rounded-lg border border-gray-700">
                 <div className="text-center">
                   <div className="text-[10px] text-gray-500 uppercase">POS X</div>
                   <div className="text-xl font-mono text-orange-400">{currentBox.display.x_mm}</div>
@@ -287,38 +306,38 @@ export default function App() {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-6">
-            <div className="flex gap-2">
+          <div className="flex flex-col-reverse md:flex-row items-center gap-4 md:gap-6">
+            <div className="flex gap-2 w-full md:w-auto">
               <button
                 onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
-                className="p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600"
+                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[44px]"
               >
                 <SkipBack size={20} />
               </button>
 
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`flex items-center gap-3 px-8 py-3 rounded-xl font-bold transition text-white shadow-lg border border-white/10 ${isPlaying ? 'bg-orange-600 hover:bg-orange-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                className={`flex-[2] md:flex-none flex items-center justify-center gap-3 px-4 md:px-8 py-3 rounded-xl font-bold transition text-white shadow-lg border border-white/10 min-h-[44px] ${isPlaying ? 'bg-orange-600 hover:bg-orange-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                 <span>{isPlaying ? "PAUSAR" : "AUTO"}</span>
               </button>
 
               <button
-                onClick={() => setCurrentStep(prev => Math.min(boxes.length, prev + 1))}
-                className="p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600"
+                onClick={() => setCurrentStep(prev => Math.min(totalBlocks, prev + 1))}
+                className="flex-1 md:flex-none p-3 md:p-3 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-white border border-gray-600 flex justify-center items-center min-h-[44px]"
               >
                 <SkipForward size={20} />
               </button>
             </div>
 
-            <div className="flex-1 flex flex-col gap-1">
-              <div className="flex justify-between text-xs text-gray-400 font-mono">
+            <div className="flex-1 flex flex-col gap-1 w-full">
+              <div className="flex justify-between text-[10px] md:text-xs text-gray-400 font-mono">
                 <span>START</span>
                 <span>PROGRESS</span>
                 <span>END</span>
               </div>
-              <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div className="relative h-4 md:h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-500 to-yellow-500 transition-all duration-300"
                   style={{ width: `${(currentStep / Math.max(1, totalBlocks)) * 100}%` }}
@@ -330,8 +349,7 @@ export default function App() {
                 max={totalBlocks}
                 value={currentStep}
                 onChange={handleSliderChange}
-                className="absolute inset-0 w-full h-8 opacity-0 cursor-pointer"
-                style={{ top: 'auto' }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
             </div>
           </div>
@@ -340,24 +358,35 @@ export default function App() {
         {/* Sidebar Toggle */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="absolute top-6 right-6 bg-gray-800 p-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-700 shadow-xl z-10 transition border border-gray-600"
+          className="absolute top-4 right-4 md:top-6 md:right-6 bg-gray-800 p-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-700 shadow-xl z-30 transition border border-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           {isSidebarOpen ? <ChevronRight size={20} /> : <Settings size={20} />}
         </button>
       </div>
 
-      {/* Sidebar (Input) */}
+      {/* Sidebar (Input) - Full width on Mobile */}
       <div
-        className={`fixed top-0 right-0 bottom-0 w-[450px] bg-gray-900 border-l border-gray-700 flex flex-col p-6 shadow-2xl z-20 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 bottom-0 
+          w-full md:w-[450px] 
+          bg-gray-900 border-l border-gray-700 flex flex-col p-6 shadow-2xl z-40 transition-transform duration-300 transform 
+          ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-          <Settings size={20} className="text-orange-500" />
-          Configuración JSON
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Settings size={20} className="text-orange-500" />
+            Configuración JSON
+          </h2>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-2 text-gray-400 hover:text-white md:hidden"
+          >
+            <X size={24} />
+          </button>
+        </div>
 
         <div className="flex-1 flex flex-col min-h-0 mb-4">
           <textarea
-            className="flex-1 bg-gray-950 border border-gray-800 rounded-lg p-4 font-mono text-xs text-green-400 resize-none focus:outline-none focus:border-orange-500 transition leading-tight"
+            className="flex-1 bg-gray-950 border border-gray-800 rounded-lg p-4 font-mono text-xs md:text-sm text-green-400 resize-none focus:outline-none focus:border-orange-500 transition leading-tight"
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             spellCheck="false"
@@ -365,8 +394,11 @@ export default function App() {
         </div>
 
         <button
-          onClick={handleParse}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition"
+          onClick={() => {
+            handleParse();
+            if (window.innerWidth < 768) setIsSidebarOpen(false);
+          }}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition min-h-[50px]"
         >
           Recalculate Model
         </button>
