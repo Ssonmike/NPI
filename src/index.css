@@ -36,17 +36,17 @@ html {
 /* Custom utility for safe padding on mobile control panels */
 @layer utilities {
   .pb-safe {
-    padding-bottom: max(6rem, env(safe-area-inset-bottom, 6rem));
+    padding-bottom: max(3rem, env(safe-area-inset-bottom, 3rem));
   }
 
   .mb-safe {
-    margin-bottom: max(6rem, env(safe-area-inset-bottom, 6rem));
+    margin-bottom: max(3rem, env(safe-area-inset-bottom, 3rem));
   }
 
   /* Ensure bottom panels have enough space on mobile */
   @media (max-width: 768px) {
     .mobile-bottom-panel {
-      padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem));
+      padding-bottom: max(3rem, calc(env(safe-area-inset-bottom) + 1rem));
     }
   }
 }
