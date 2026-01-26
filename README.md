@@ -1,161 +1,371 @@
-# NPI Pallet Loading Visualizer 
+# Pallet Visualizer - Full-Stack Application
 
-NPI Project Summary
-This is a 3D Pallet Loading Visualizer built with React, Three.js, and Vite. It's designed to visualize warehouse pallet loading instructions in an immersive 3D environment.
-Key Features:
+## 🚀 Overview
 
-3D Visualization - Uses React Three Fiber (@react-three/fiber) to render boxes being stacked on a pallet
-Step-by-step Loading Animation - Shows boxes being placed one by one with auto-play capability
-SAP Integration - Parses JSON work orders with loading instructions (coordinates, quantities, sequences)
-Interactive Controls - Play/pause, step forward/backward, and progress slider
-Real-time Positioning - Displays X, Y, Z coordinates in millimeters for each placement step
-Responsive UI - Clean industrial interface with collapsible sidebar for JSON input
+A full-stack 3D pallet visualization application for warehouse operations. Displays real-time palletization instructions from SAP/Ortec with dynamic URL-based routing for AMR fleet operations.
 
-Technical Stack:
+**Stack:**
+- **Frontend:** React + Three.js + Vite + TailwindCSS
+- **Backend:** Node.js + Express
+- **Database:** SQLite (default) or PostgreSQL
 
-Frontend: React 18.3.1 with Vite
-3D Graphics: Three.js 0.170.0 + React Three Fiber + Drei
-Styling: Tailwind CSS
-Icons: Lucide React
-Language: Spanish UI (warehouse operations context)
+---
 
-How It Works:
+## 📦 Installation
 
-Takes JSON input with pallet specifications and load instructions
-Each instruction defines a block of boxes with:
+### 1. Clone and Install Dependencies
 
-Position coordinates (x1, y1, z1 to x2, y2, z2)
-Quantities in each dimension (quantityX, quantityY, quantityZ)
-Sequence order
+```bash
+cd NPI
+npm install
+```
 
+### 2. Database Setup
 
-Generates individual box positions from block instructions
-Animates placement sequence in 3D space
-Maps SAP coordinates to Three.js coordinate system (X→X, Y→Z, Z→Y)
+**Option A: SQLite (Default - No setup required)**
 
-Main Components:
+The SQLite database will be created automatically on first run at `database/pallet_visualizer.db`.
 
-App.jsx - Main UI controller with state management
-Scene.jsx - 3D scene setup with camera and lighting
-Box.jsx - Individual box 3D rendering
-Pallet.jsx - Pallet platform rendering
-boxLogic.js - Core parsing and box generation logic
+**Option B: PostgreSQL (Optional)**
 
-# Map of how it works
+```bash
+# Install PostgreSQL
+# Create database
+createdb pallet_visualizer
 
-┌─────────────────────────────────────────────────────────────────┐
-│                    1. JSON INPUT LAYER                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  DEFAULT_JSON (Line 6-81) ──┐                                 │
-│                              ├──→ jsonInput state (Line 84)    │
-│  User Textarea (Line 271) ───┘                                 │
-│                                                                 │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-                     │ User clicks "Recalcular Modelo" (Line 280)
-                     │ OR useEffect runs on mount (Line 94)
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              2. PROCESSING TRIGGER                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  handleParse() function (Line 98-110)                          │
-│    ├─ Calls: generateSequence(jsonInput)                       │
-│    ├─ Receives: { boxes, pallet, resource }                    │
-│    └─ Updates state: setBoxes(), setPallet(), setResourceInfo()│
-│                                                                 │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│         3. CORE LOGIC (boxLogic.js)                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  generateSequence() - Line 62                                  │
-│                                                                 │
-│  STEP A: Parse JSON (Line 66-75)                              │
-│    └─ JSON.parse() → rawData object                           │
-│                                                                 │
-│  STEP B: Extract Pallet Info (Line 77-89)                     │
-│    ├─ rawData.resource.pallet                                 │
-│    ├─ Convert mm/cm → meters                                  │
-│    └─ Create pallet object: {length, width, height, maxHeight}│
-│                                                                 │
-│  STEP C: Process Each Load Instruction (Line 91-178)          │
-│    ├─ Sort by sequence number (Line 97)                       │
-│    ├─ For each instruction block:                             │
-│    │   ├─ normalizeBlock() - converts to standard format      │
-│    │   ├─ Calculate individual box dimensions (Line 104-110)  │
-│    │   ├─ Generate grid of boxes using nested loops:          │
-│    │   │   for z → for y → for x (Line 119-164)              │
-│    │   ├─ Create box object with:                            │
-│    │   │   • position: [x, y, z] in meters (3D coordinates)  │
-│    │   │   • size: [width, height, depth]                    │
-│    │   │   • display: {x_mm, y_mm, z_mm, stepDescription}   │
-│    │   │   • metadata: ids, sequence, indices                │
-│    │   └─ Coordinate mapping (Line 125-134):                 │
-│    │       SAP X → Three.js X                                │
-│    │       SAP Y → Three.js Z                                │
-│    │       SAP Z → Three.js Y (up)                           │
-│    └─ Concatenate all boxes (Line 177)                        │
-│                                                                 │
-│  STEP D: Return Results (Line 185-192)                        │
-│    └─ { boxes: [...], pallet: {...}, resource: {...} }       │
-│                                                                 │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              4. STATE UPDATE (App.jsx)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  setBoxes(generatedBoxes)      ← Array of box objects          │
-│  setPallet(parsedPallet)        ← Pallet dimensions            │
-│  setResourceInfo(resource)      ← Work order ID & name         │
-│                                                                 │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│            5. 3D RENDERING (Scene.jsx)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│ Scene boxes={boxes} pallet={pallet} currentStep={...} />    │
-│    │                                                            │
-│    ├─ Canvas> setup (Line 10-13)                             │
-│    │   └─ Camera, lighting, background                        │
-│    │                                                            │
-│    ├─ Pallet> component (Line 23)                            │
-│    │   └─ Renders pallet base using pallet dimensions         │
-│    │                                                            │
-│    └─ boxes.map() → Box> components (Line 25-61)             │
-│        ├─ Each box gets status: placed/current/future         │
-│        ├─ Position & size from box.position, box.size         │
-│        └─ Box.jsx renders 3D mesh with color based on status  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-                     │
-                     ▼
-            ┌────────────────┐
-            │  USER SEES 3D  │
-            │  VISUALIZATION │
-            └────────────────┘
+# Create user
+psql -c "CREATE USER pv_user WITH PASSWORD 'your_password';"
+psql -c "GRANT ALL PRIVILEGES ON DATABASE pallet_visualizer TO pv_user;"
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Run schema
+psql -U pv_user -d pallet_visualizer -f database/schema.sql
 
-Currently, two official plugins are available:
+# Optional: Load seed data
+psql -U pv_user -d pallet_visualizer -f database/seeds.sql
+```
 
-# Different builds:
+Update `.env` to use PostgreSQL:
+```bash
+DB_TYPE=postgresql
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=pallet_visualizer
+DB_USER=pv_user
+DB_PASSWORD=your_password
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🏃 Running the Application
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Development Mode (Frontend + Backend)
 
-## Expanding the ESLint configuration
+```bash
+npm run dev:full
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This starts:
+- **Frontend (Vite):** http://localhost:5173
+- **Backend (Express):** http://localhost:3000
+
+### Production Mode
+
+```bash
+# Build frontend
+npm run build
+
+# Start server
+npm start
+```
+
+Server runs on http://localhost:3000 and serves the built React app.
+
+---
+
+## 🌐 API Endpoints
+
+### POST /api/warehouse-orders
+Create a new warehouse order with tasks.
+
+**Request:**
+```json
+{
+  "resourceId": "PAL_IITE8612MIS-B3AG",
+  "resource": {
+    "pallet": {
+      "length": 2150,
+      "width": 1100,
+      "height": 130,
+      "maxHeight": 2300,
+      "sizeUom": "mm"
+    }
+  },
+  "loadInstructions": [
+    {
+      "id": "71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+      "sequence": 1,
+      "x1": 25, "x2": 1655,
+      "y1": 150, "y2": 335,
+      "z1": 0, "z2": 1010,
+      "quantityX": 1, "quantityY": 1, "quantityZ": 1,
+      "pickingLocation": "BA01-01-00",
+      "serialNumber": "IIXUB2493HSU-B6"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "warehouseOrderId": "PAL_IITE8612MIS-B3AG",
+  "tasksCount": 3,
+  "urls": [
+    {
+      "taskId": "71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+      "sequence": 1,
+      "url": "http://localhost:3000/PAL_IITE8612MIS-B3AG/task/71c869ce-8d4a-467c-ad85-d0f0f56d8c3d"
+    }
+  ]
+}
+```
+
+### GET /api/warehouse-orders/:id
+Retrieve warehouse order data.
+
+### POST /api/tasks/:taskId/complete
+Mark a task as completed and get next task URL.
+
+**Response:**
+```json
+{
+  "success": true,
+  "taskId": "71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+  "status": "COMPLETED",
+  "nextTaskId": "714c2a19-231f-48d6-9ca1-f2b820c5def8",
+  "nextTaskUrl": "/PAL_IITE8612MIS-B3AG/task/714c2a19-231f-48d6-9ca1-f2b820c5def8",
+  "warehouseOrderCompleted": false
+}
+```
+
+### GET /api/health
+Health check endpoint.
+
+---
+
+## 🔗 Dynamic URLs
+
+Each task has a unique URL:
+
+```
+/{warehouseOrderId}/task/{taskId}
+
+Example:
+http://localhost:3000/PAL_IITE8612MIS-B3AG/task/71c869ce-8d4a-467c-ad85-d0f0f56d8c3d
+```
+
+Opening this URL:
+1. Loads the warehouse order from database
+2. Displays 3D visualization for the specific task
+3. Shows picking location and instructions
+4. Allows task completion with auto-navigation to next task
+
+---
+
+## 🧪 Testing
+
+### 1. Test with Seed Data (SQLite)
+
+```bash
+# Start server
+npm run dev:full
+
+# In another terminal, POST a warehouse order
+curl -X POST http://localhost:3000/api/warehouse-orders \
+  -H "Content-Type: application/json" \
+  -d @database/seeds.sql
+```
+
+Or use the test data from `src/data/palletConfigurations.js`:
+
+```bash
+# Create test file
+echo '{
+  "resourceId": "PAL_TEST_001",
+  "resource": { "pallet": { "length": 2150, "width": 1100, "height": 130, "maxHeight": 2300, "sizeUom": "mm" } },
+  "loadInstructions": [
+    { "id": "task-1", "sequence": 1, "x1": 0, "x2": 1000, "y1": 0, "y2": 500, "z1": 0, "z2": 600, "quantityX": 1, "quantityY": 1, "quantityZ": 1, "pickingLocation": "A01", "serialNumber": "BOX-001" }
+  ]
+}' > test-order.json
+
+curl -X POST http://localhost:3000/api/warehouse-orders \
+  -H "Content-Type: application/json" \
+  -d @test-order.json
+```
+
+### 2. Open Task URL
+
+Copy the URL from the response and open in browser.
+
+### 3. Complete Task
+
+Click the "Completar" button to mark task as done and navigate to next task.
+
+---
+
+## 🛠️ Development Mode
+
+When accessing the app without URL parameters (e.g., `http://localhost:5173`), it loads in **Development Mode**:
+
+- Shows "Development Mode" in header
+- Loads default pallet configuration
+- Sidebar with JSON editor is available
+- Useful for testing new pallet configurations
+
+---
+
+## 📁 Project Structure
+
+```
+NPI/
+├── database/
+│   ├── schema.sql              # PostgreSQL schema
+│   ├── schema.sqlite.sql       # SQLite schema
+│   ├── seeds.sql               # Test data
+│   └── pallet_visualizer.db    # SQLite database (auto-created)
+├── server/
+│   ├── config/
+│   │   └── database.js         # Database connection
+│   ├── controllers/
+│   │   ├── warehouseOrderController.js
+│   │   └── taskController.js
+│   ├── middleware/
+│   │   ├── validateOrtecJSON.js
+│   │   └── errorHandler.js
+│   ├── routes/
+│   │   ├── warehouseOrders.js
+│   │   ├── tasks.js
+│   │   └── health.js
+│   ├── utils/
+│   │   ├── urlGenerator.js
+│   │   └── logger.js
+│   └── server.js               # Main Express server
+├── src/
+│   ├── components/             # React components
+│   ├── data/
+│   │   └── palletConfigurations.js  # Test data
+│   ├── utils/
+│   │   └── boxLogic.js
+│   └── App.jsx                 # Main React app
+├── .env                        # Environment variables
+├── package.json
+└── vite.config.js
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+
+```bash
+# Server
+PORT=3000
+NODE_ENV=development
+BASE_URL=http://localhost:3000
+
+# Database
+DB_TYPE=sqlite                  # or 'postgresql'
+DB_PATH=./database/pallet_visualizer.db
+
+# Security
+CORS_ORIGIN=http://localhost:5173
+
+# Logging
+LOG_LEVEL=info
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### Database Connection Failed
+
+**SQLite:**
+- Check that `database/` directory exists
+- Ensure write permissions
+
+**PostgreSQL:**
+- Verify PostgreSQL is running: `pg_isready`
+- Check credentials in `.env`
+- Test connection: `psql -U pv_user -d pallet_visualizer`
+
+### Frontend Shows Blank Page
+
+- Check browser console for errors
+- Verify backend is running: `curl http://localhost:3000/api/health`
+- Rebuild frontend: `npm run build`
+
+### Task URL Returns 404
+
+- Verify warehouse order exists in database
+- Check task ID is correct
+- View database: `sqlite3 database/pallet_visualizer.db "SELECT * FROM warehouse_orders;"`
+
+---
+
+## 📊 Database Queries
+
+### View Active Warehouse Orders
+
+```sql
+-- SQLite
+sqlite3 database/pallet_visualizer.db "SELECT id, status, total_tasks FROM warehouse_orders;"
+
+-- PostgreSQL
+psql -U pv_user -d pallet_visualizer -c "SELECT id, status, total_tasks FROM warehouse_orders;"
+```
+
+### View Tasks for a Warehouse Order
+
+```sql
+SELECT id, sequence, status, picking_location 
+FROM warehouse_tasks 
+WHERE warehouse_order_id = 'PAL_IITE8612MIS-B3AG' 
+ORDER BY sequence;
+```
+
+---
+
+## 🎯 Production Deployment
+
+1. **Build Frontend:**
+   ```bash
+   npm run build
+   ```
+
+2. **Set Environment Variables:**
+   ```bash
+   NODE_ENV=production
+   BASE_URL=http://your-server-ip:3000
+   ```
+
+3. **Start Server:**
+   ```bash
+   npm start
+   ```
+
+4. **Optional: Use PM2 for Process Management:**
+   ```bash
+   npm install -g pm2
+   pm2 start server/server.js --name pallet-visualizer
+   pm2 save
+   pm2 startup
+   ```
+
+---
+
+## 📝 License
+
+MIT

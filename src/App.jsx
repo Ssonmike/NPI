@@ -5,8 +5,13 @@ import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings
 import { PALLET_CONFIGURATIONS, getPalletById } from './data/palletConfigurations';
 
 export default function App() {
-  const [selectedPalletId, setSelectedPalletId] = useState('pallet1');
-  const [jsonInput, setJsonInput] = useState(JSON.stringify(PALLET_CONFIGURATIONS.pallet1.data, null, 2));
+  // Dynamic data loading state
+  const [warehouseOrderId, setWarehouseOrderId] = useState(null);
+  const [taskId, setTaskId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [jsonInput, setJsonInput] = useState('');
   const [boxes, setBoxes] = useState([]);
   const [pallet, setPallet] = useState(null);
   const [resourceInfo, setResourceInfo] = useState(null);
@@ -18,49 +23,94 @@ export default function App() {
   // Calculate total blocks
   const totalBlocks = boxes.length > 0 ? Math.max(...boxes.map(b => b.sequence)) : 0;
 
-  // Initialize from default JSON
+  // Load data from URL or embedded data
   useEffect(() => {
-    handleParse();
+    loadDataFromUrl();
   }, []);
 
-  const handleParse = useCallback(() => {
+  const loadDataFromUrl = async () => {
     try {
-      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(jsonInput);
-      setBoxes(generatedBoxes);
-      setPallet(parsedPallet);
-      setResourceInfo(resource);
-      setCurrentStep(0); // Reset to start
-      setIsPlaying(false);
+      // Check if we have embedded data from server
+      if (window.__INITIAL_DATA__) {
+        console.log('Loading from embedded data');
+        const data = window.__INITIAL_DATA__;
 
-      console.log('Parsed boxes:', generatedBoxes.length);
-      console.log('Unique sequences:', [...new Set(generatedBoxes.map(b => b.sequence))].sort((a, b) => a - b));
-    } catch (e) {
-      alert("Invalid JSON: " + e.message);
+        setWarehouseOrderId(data.warehouseOrderId);
+        setTaskId(data.taskId);
+
+        // Generate boxes from warehouse order data
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
+          JSON.stringify(data.warehouseOrder, null, 2)
+        );
+
+        setBoxes(generatedBoxes);
+        setPallet(parsedPallet);
+        setResourceInfo(resource);
+        setJsonInput(JSON.stringify(data.warehouseOrder, null, 2));
+
+        // Set current step to the task sequence
+        setCurrentStep(data.sequence);
+        setLoading(false);
+        return;
+      }
+
+      // Parse URL to get warehouse order and task IDs
+      const pathParts = window.location.pathname.split('/');
+      if (pathParts.length >= 4 && pathParts[2] === 'task') {
+        const woId = pathParts[1];
+        const tId = pathParts[3];
+
+        console.log('Loading from API:', woId, tId);
+
+        setWarehouseOrderId(woId);
+        setTaskId(tId);
+
+        // Fetch data from API
+        const response = await fetch(`/api/warehouse-orders/${woId}`);
+        if (!response.ok) {
+          throw new Error('Warehouse order not found');
+        }
+
+        const ortecData = await response.json();
+
+        // Generate boxes
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
+          JSON.stringify(ortecData, null, 2)
+        );
+
+        setBoxes(generatedBoxes);
+        setPallet(parsedPallet);
+        setResourceInfo(resource);
+        setJsonInput(JSON.stringify(ortecData, null, 2));
+
+        // Find current task sequence
+        const currentTask = ortecData.loadInstructions.find(t => t.id === tId);
+        if (currentTask) {
+          setCurrentStep(currentTask.sequence);
+        }
+
+        setLoading(false);
+      } else {
+        // No URL params - load default pallet for development
+        console.log('No URL params, loading default pallet');
+        const defaultData = PALLET_CONFIGURATIONS.pallet1.data;
+        setJsonInput(JSON.stringify(defaultData, null, 2));
+
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
+          JSON.stringify(defaultData, null, 2)
+        );
+
+        setBoxes(generatedBoxes);
+        setPallet(parsedPallet);
+        setResourceInfo(resource);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err.message);
+      setLoading(false);
     }
-  }, [jsonInput]);
-
-  const handlePalletChange = useCallback((palletId) => {
-    console.log('Changing to pallet:', palletId);
-    setSelectedPalletId(palletId);
-    const palletConfig = getPalletById(palletId);
-    const newJson = JSON.stringify(palletConfig.data, null, 2);
-    setJsonInput(newJson);
-
-    try {
-      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(newJson);
-      setBoxes(generatedBoxes);
-      setPallet(parsedPallet);
-      setResourceInfo(resource);
-      setCurrentStep(0); // CRITICAL: Reset step to 0
-      setIsPlaying(false);
-
-      console.log('Loaded pallet:', palletId);
-      console.log('Total boxes:', generatedBoxes.length);
-      console.log('Sequences:', [...new Set(generatedBoxes.map(b => b.sequence))].sort((a, b) => a - b));
-    } catch (e) {
-      console.error("Error loading pallet:", e);
-    }
-  }, []);
+  };
 
   // Animation Loop for AUTO mode
   useEffect(() => {
@@ -104,18 +154,93 @@ export default function App() {
     });
   };
 
+  const handleParse = useCallback(() => {
+    try {
+      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(jsonInput);
+      setBoxes(generatedBoxes);
+      setPallet(parsedPallet);
+      setResourceInfo(resource);
+      setCurrentStep(0);
+      setIsPlaying(false);
+
+      console.log('Parsed boxes:', generatedBoxes.length);
+      console.log('Unique sequences:', [...new Set(generatedBoxes.map(b => b.sequence))].sort((a, b) => a - b));
+    } catch (e) {
+      alert("Invalid JSON: " + e.message);
+    }
+  }, [jsonInput]);
+
+  const handleCompleteTask = async () => {
+    if (!taskId) {
+      alert('No active task to complete');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.warehouseOrderCompleted) {
+          alert('¡Warehouse Order Completado! 🎉');
+          // Could redirect to a completion page or dashboard
+        } else if (result.nextTaskUrl) {
+          // Redirect to next task
+          window.location.href = result.nextTaskUrl;
+        }
+      } else {
+        alert('Error completing task: ' + result.error);
+      }
+    } catch (err) {
+      console.error('Error completing task:', err);
+      alert('Error completing task');
+    }
+  };
+
   // Derived state
   const currentBlockBoxes = currentStep > 0 ? boxes.filter(b => b.sequence === currentStep) : [];
   const currentBox = currentBlockBoxes.length > 0 ? currentBlockBoxes[0] : null;
   const nextBox = currentStep < totalBlocks ? boxes.find(b => b.sequence === currentStep + 1) : null;
   const isComplete = currentStep === totalBlocks && totalBlocks > 0;
 
-  const currentPalletConfig = getPalletById(selectedPalletId);
-
   // Debug logging
   useEffect(() => {
     console.log('Current state:', { currentStep, totalBlocks, boxesCount: boxes.length });
   }, [currentStep, totalBlocks, boxes.length]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">⏳</div>
+          <div className="text-xl">Loading warehouse order...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">❌</div>
+          <div className="text-xl text-red-400">Error: {error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-500"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen flex-col bg-gray-900 text-white overflow-hidden font-sans">
@@ -127,29 +252,15 @@ export default function App() {
         {/* Top Header - Work Order Info */}
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex flex-col gap-3 pointer-events-none z-10">
 
-          {/* Pallet Selector */}
-          <div className="pointer-events-auto flex items-start">
-            <div className="flex gap-2 overflow-x-auto max-w-full pb-2 md:pb-0 scrollbar-hide mask-fade-right">
-              <button
-                onClick={() => handlePalletChange('pallet1')}
-                className={`flex-shrink-0 px-4 py-3 md:px-6 md:py-3 rounded-lg font-bold transition border-2 text-sm md:text-base min-w-[100px] md:min-w-0 ${selectedPalletId === 'pallet1'
-                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
-                  }`}
-              >
-                Pallet 1
-              </button>
-              <button
-                onClick={() => handlePalletChange('pallet2')}
-                className={`flex-shrink-0 px-4 py-3 md:px-6 md:py-3 rounded-lg font-bold transition border-2 text-sm md:text-base min-w-[100px] md:min-w-0 ${selectedPalletId === 'pallet2'
-                  ? 'bg-orange-600 border-orange-500 text-white shadow-lg'
-                  : 'bg-gray-800/80 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
-                  }`}
-              >
-                Pallet 2
-              </button>
+          {/* Warehouse Order ID Display (only show if we have a warehouse order) */}
+          {warehouseOrderId && (
+            <div className="pointer-events-auto">
+              <div className="px-4 py-2 bg-gray-800/80 border border-gray-600 rounded-lg">
+                <div className="text-xs text-gray-400 uppercase tracking-wider">Warehouse Order</div>
+                <div className="text-sm font-mono text-orange-400 font-bold">{warehouseOrderId}</div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Info Card */}
           <div className="pointer-events-auto bg-gray-800/90 backdrop-blur border border-gray-600 rounded-lg p-3 md:p-4 shadow-xl w-full max-w-[calc(100vw-32px)] md:max-w-sm transition-all">
@@ -157,7 +268,9 @@ export default function App() {
               <BoxIcon className="text-orange-500" size={18} />
               <span className="text-[10px] md:text-xs uppercase tracking-widest text-gray-400 font-bold">Work Order</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate">{currentPalletConfig.displayName}</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate">
+              {warehouseOrderId ? `Task ${currentStep} of ${totalBlocks}` : 'Development Mode'}
+            </h1>
             <p className="text-xs md:text-sm text-gray-300 mt-1 truncate">{resourceInfo?.name || '---'}</p>
 
             {/* Picking Location Display */}
@@ -282,6 +395,17 @@ export default function App() {
               >
                 <SkipForward size={20} />
               </button>
+
+              {/* Complete Task Button (only show if we have an active task) */}
+              {taskId && currentStep > 0 && (
+                <button
+                  onClick={handleCompleteTask}
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-xl font-bold transition text-white shadow-lg border border-white/10 min-h-[48px] bg-green-600 hover:bg-green-500 active:bg-green-400"
+                >
+                  <span>✓</span>
+                  <span>Completar</span>
+                </button>
+              )}
             </div>
 
             <div className="flex-1 flex flex-col gap-1 w-full relative">

@@ -1,0 +1,159 @@
+-- ============================================
+-- Seed Data for Testing
+-- PostgreSQL version
+-- ============================================
+
+-- Clear existing data
+DELETE FROM active_sessions;
+DELETE FROM warehouse_tasks;
+DELETE FROM warehouse_orders;
+
+-- Insert test warehouse order (Pallet 1)
+INSERT INTO warehouse_orders (id, ortec_data, status, total_tasks) VALUES (
+  'PAL_IITE8612MIS-B3AG',
+  '{
+    "resourceId": "PAL_IITE8612MIS-B3AG",
+    "resource": {
+      "pallet": {
+        "maxHeight": 2300,
+        "name": "LFD Pallet",
+        "description": "",
+        "weightUom": "kg",
+        "sizeUom": "mm",
+        "length": 2150,
+        "width": 1100,
+        "height": 130,
+        "volume": 0.307,
+        "volumeUom": "m3",
+        "weight": 15,
+        "maxWeight": 2000,
+        "maxLoadWeight": 1985,
+        "externalReferences": {}
+      }
+    },
+    "loadInstructions": [
+      {
+        "id": "71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+        "serialNumber": "IIXUB2493HSU-B6",
+        "pickingLocation": "BA01-01-00",
+        "x1": 25,
+        "x2": 1655,
+        "y1": 150,
+        "y2": 335,
+        "z1": 0,
+        "z2": 1010,
+        "quantityX": 1,
+        "quantityY": 1,
+        "quantityZ": 1,
+        "sizeUom": "mm",
+        "orientation": "LxW",
+        "blockType": "Cube",
+        "packageId": "02546ba5-be55-402c-80cf-201ea75052e5",
+        "sequence": 1
+      },
+      {
+        "id": "714c2a19-231f-48d6-9ca1-f2b820c5def8",
+        "serialNumber": "IITF3239MSC-B1AG",
+        "pickingLocation": "BA01-02-00",
+        "x1": 25,
+        "x2": 2125,
+        "y1": 335,
+        "y2": 560,
+        "z1": 0,
+        "z2": 1280,
+        "quantityX": 1,
+        "quantityY": 1,
+        "quantityZ": 1,
+        "sizeUom": "mm",
+        "orientation": "LxW",
+        "blockType": "Cube",
+        "packageId": "d3bb422c-bbe2-406d-a16e-bbc082103a1a",
+        "sequence": 2
+      },
+      {
+        "id": "cee2def4-55c8-460a-94a4-7a16cd4883bd",
+        "serialNumber": "IIXUB2792QSU-B6",
+        "pickingLocation": "BA01-03-00",
+        "x1": 25,
+        "x2": 1405,
+        "y1": 560,
+        "y2": 950,
+        "z1": 0,
+        "z2": 845,
+        "quantityX": 1,
+        "quantityY": 3,
+        "quantityZ": 1,
+        "sizeUom": "mm",
+        "orientation": "LxW",
+        "blockType": "Cube",
+        "packageId": "f7562342-fa38-4b92-8f21-1b381aae9235",
+        "sequence": 3
+      }
+    ]
+  }'::jsonb,
+  'ACTIVE',
+  3
+);
+
+-- Insert tasks for Pallet 1
+INSERT INTO warehouse_tasks (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status) VALUES
+(
+  '71c869ce-8d4a-467c-ad85-d0f0f56d8c3d',
+  'PAL_IITE8612MIS-B3AG',
+  1,
+  '{
+    "id": "71c869ce-8d4a-467c-ad85-d0f0f56d8c3d",
+    "serialNumber": "IIXUB2493HSU-B6",
+    "pickingLocation": "BA01-01-00",
+    "x1": 25, "x2": 1655, "y1": 150, "y2": 335, "z1": 0, "z2": 1010,
+    "quantityX": 1, "quantityY": 1, "quantityZ": 1,
+    "sizeUom": "mm", "orientation": "LxW", "blockType": "Cube",
+    "packageId": "02546ba5-be55-402c-80cf-201ea75052e5", "sequence": 1
+  }'::jsonb,
+  '02546ba5-be55-402c-80cf-201ea75052e5',
+  'IIXUB2493HSU-B6',
+  'BA01-01-00',
+  'PENDING'
+),
+(
+  '714c2a19-231f-48d6-9ca1-f2b820c5def8',
+  'PAL_IITE8612MIS-B3AG',
+  2,
+  '{
+    "id": "714c2a19-231f-48d6-9ca1-f2b820c5def8",
+    "serialNumber": "IITF3239MSC-B1AG",
+    "pickingLocation": "BA01-02-00",
+    "x1": 25, "x2": 2125, "y1": 335, "y2": 560, "z1": 0, "z2": 1280,
+    "quantityX": 1, "quantityY": 1, "quantityZ": 1,
+    "sizeUom": "mm", "orientation": "LxW", "blockType": "Cube",
+    "packageId": "d3bb422c-bbe2-406d-a16e-bbc082103a1a", "sequence": 2
+  }'::jsonb,
+  'd3bb422c-bbe2-406d-a16e-bbc082103a1a',
+  'IITF3239MSC-B1AG',
+  'BA01-02-00',
+  'PENDING'
+),
+(
+  'cee2def4-55c8-460a-94a4-7a16cd4883bd',
+  'PAL_IITE8612MIS-B3AG',
+  3,
+  '{
+    "id": "cee2def4-55c8-460a-94a4-7a16cd4883bd",
+    "serialNumber": "IIXUB2792QSU-B6",
+    "pickingLocation": "BA01-03-00",
+    "x1": 25, "x2": 1405, "y1": 560, "y2": 950, "z1": 0, "z2": 845,
+    "quantityX": 1, "quantityY": 3, "quantityZ": 1,
+    "sizeUom": "mm", "orientation": "LxW", "blockType": "Cube",
+    "packageId": "f7562342-fa38-4b92-8f21-1b381aae9235", "sequence": 3
+  }'::jsonb,
+  'f7562342-fa38-4b92-8f21-1b381aae9235',
+  'IIXUB2792QSU-B6',
+  'BA01-03-00',
+  'PENDING'
+);
+
+-- Success message
+DO $$ 
+BEGIN 
+  RAISE NOTICE 'Seed data inserted successfully!';
+END $$;
