@@ -16,6 +16,7 @@ const logger = require('./utils/logger');
 const warehouseOrdersRoutes = require('./routes/warehouseOrders');
 const tasksRoutes = require('./routes/tasks');
 const healthRoutes = require('./routes/health');
+const blockBuilderRoutes = require('./routes/blockBuilder');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +36,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/warehouse-orders', warehouseOrdersRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/block-builder', blockBuilderRoutes);
+
+// Serve testing tools
+app.get('/tools/pallet-generator', (req, res) => {
+    const toolPath = path.join(__dirname, '../tools/pallet-generator/index.html');
+    if (fs.existsSync(toolPath)) {
+        res.sendFile(toolPath);
+    } else {
+        res.status(404).send('Pallet Generator tool not found.');
+    }
+});
 
 // Serve static files from React build
 const distPath = path.join(__dirname, '../dist');

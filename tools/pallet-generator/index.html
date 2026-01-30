@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 Pallet Generator - NPI Testing Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+            background: #334155;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #f97316;
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            margin-top: -0.5rem;
+        }
+        
+        input[type="range"]::-moz-range-track {
+            background: #334155;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            background: #f97316;
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            border: none;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .order-row {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .toast {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                🎲 Pallet Generator
+            </h1>
+            <p class="text-gray-400">
+                Generate random warehouse orders to test the NPI Pallet Visualizer API
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Configuration Panel -->
+            <div class="lg:col-span-1">
+                <div class="glass rounded-lg p-6 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+                        <span>⚙️</span> Configuration
+                    </h2>
+                    
+                    <!-- API URL -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">API URL</label>
+                        <input 
+                            id="apiUrl" 
+                            type="text" 
+                            value="http://localhost:3000"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
+                        />
+                    </div>
+                    
+                    <!-- Pallet Type -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Pallet Type</label>
+                        <select 
+                            id="palletType"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
+                        >
+                            <option value="euro">Euro Pallet (1200x800mm)</option>
+                            <option value="standard" selected>Standard Pallet (1200x1000mm)</option>
+                            <option value="large">Large Pallet (1200x1200mm)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Number of Blocks -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">
+                            Number of Blocks: <span id="numBlocksValue" class="text-orange-500 font-bold">5</span>
+                        </label>
+                        <input 
+                            id="numBlocks"
+                            type="range" 
+                            min="3" 
+                            max="15" 
+                            value="5"
+                            class="w-full"
+                        />
+                    </div>
+                    
+                    <!-- Block Size Range -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Block Size Range</label>
+                        <select 
+                            id="blockSizeRange"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
+                        >
+                            <option value="random" selected>Random (Varied)</option>
+                            <option value="small">Small (300-600mm)</option>
+                            <option value="medium">Medium (600-1000mm)</option>
+                            <option value="large">Large (1000-1600mm)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Auto Picking Locations -->
+                    <div class="mb-6">
+                        <label class="flex items-center gap-2 cursor-pointer text-gray-300">
+                            <input 
+                                id="autoPickingLocation"
+                                type="checkbox" 
+                                checked
+                                class="w-4 h-4 accent-orange-500"
+                            />
+                            <span class="text-sm">Auto-generate picking locations</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Generate Buttons -->
+                    <div class="space-y-2">
+                        <button 
+                            onclick="generateOrders(1)"
+                            class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
+                        >
+                            🎲 Generate 1 Order
+                        </button>
+                        <button 
+                            onclick="generateOrders(5)"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
+                        >
+                            🎲 Generate 5 Orders
+                        </button>
+                        <button 
+                            onclick="generateOrders(10)"
+                            class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
+                        >
+                            🎲 Generate 10 Orders (Stress Test)
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Statistics Panel -->
+                <div class="glass rounded-lg p-6 border border-gray-700 mt-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+                        <span>📊</span> Statistics
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Total Generated:</span>
+                            <span id="statTotalGenerated" class="font-bold text-white">0</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Successful:</span>
+                            <span id="statSuccessful" class="font-bold text-green-400">0</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Failed:</span>
+                            <span id="statFailed" class="font-bold text-red-400">0</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Success Rate:</span>
+                            <span id="statSuccessRate" class="font-bold text-orange-400">0%</span>
+                        </div>
+                        
+                        <div class="border-t border-gray-700 my-3"></div>
+                        
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Active WOs in DB:</span>
+                            <span id="statActiveWOs" class="font-bold text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Total Tasks:</span>
+                            <span id="statTotalTasks" class="font-bold text-purple-400">-</span>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onclick="refreshStatistics()"
+                        class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition"
+                    >
+                        🔄 Refresh Stats
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Generated Orders List -->
+            <div class="lg:col-span-2">
+                <div class="glass rounded-lg p-6 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+                        <span>📦</span> Generated Orders
+                    </h2>
+                    
+                    <div id="ordersList" class="space-y-3 max-h-[800px] overflow-y-auto pr-2">
+                        <!-- Empty state -->
+                        <div id="emptyState" class="text-center py-12 text-gray-500">
+                            <div class="text-6xl mb-4">📦</div>
+                            <p class="text-lg">No orders generated yet.</p>
+                            <p class="text-sm mt-2">Click a generate button to create warehouse orders.</p>
+                        </div>
+                        
+                        <!-- Orders will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+    
+    <script>
+        // Global state
+        let stats = {
+            totalGenerated: 0,
+            successful: 0,
+            failed: 0
+        };
+        
+        let generatedOrders = []; // Store orders for retry
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update slider value display
+            document.getElementById('numBlocks').addEventListener('input', (e) => {
+                document.getElementById('numBlocksValue').textContent = e.target.value;
+            });
+            
+            // Initial stats refresh
+            refreshStatistics();
+        });
+        
+        // Generate orders
+        async function generateOrders(count) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const config = getConfiguration();
+            
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) emptyState.style.display = 'none';
+            
+            // Show loading indicator
+            showToast(`Generating ${count} warehouse order(s)...`, 'info');
+            
+            for (let i = 0; i < count; i++) {
+                const order = generateRandomWarehouseOrder(config);
+                const result = await postWarehouseOrder(order, apiUrl);
+                
+                // Update stats
+                stats.totalGenerated++;
+                if (result.success) {
+                    stats.successful++;
+                } else {
+                    stats.failed++;
+                    generatedOrders.push({ order, failed: true });
+                }
+                
+                // Add to list
+                addOrderToList(order, result);
+                updateStatistics();
+                
+                // Small delay between requests to avoid overwhelming server
+                if (i < count - 1) {
+                    await sleep(100);
+                }
+            }
+            
+            showToast(`${count} warehouse order(s) generated!`, 'success');
+            refreshStatistics();
+        }
+        
+        // Get configuration from form
+        function getConfiguration() {
+            const palletType = document.getElementById('palletType').value;
+            const numBlocks = parseInt(document.getElementById('numBlocks').value);
+            const blockSizeRange = document.getElementById('blockSizeRange').value;
+            const autoPickingLocation = document.getElementById('autoPickingLocation').checked;
+            
+            let palletLength, palletWidth;
+            switch(palletType) {
+                case 'euro':
+                    palletLength = 1200;
+                    palletWidth = 800;
+                    break;
+                case 'large':
+                    palletLength = 1200;
+                    palletWidth = 1200;
+                    break;
+                default: // standard
+                    palletLength = 1200;
+                    palletWidth = 1000;
+            }
+            
+            return {
+                palletLength,
+                palletWidth,
+                numBlocks,
+                blockSizeRange,
+                autoPickingLocation,
+                palletType: palletType.charAt(0).toUpperCase() + palletType.slice(1) + ' Pallet'
+            };
+        }
+        
+        // Generate random warehouse order
+        function generateRandomWarehouseOrder(config) {
+            const woId = `PAL_${generateRandomId()}`;
+            const numBlocks = config.numBlocks || randomInt(3, 15);
+            
+            const order = {
+                resourceId: woId,
+                resource: {
+                    pallet: {
+                        maxHeight: 2300,
+                        name: config.palletType || "Auto-Generated Test Pallet",
+                        description: `Generated at ${new Date().toISOString()}`,
+                        weightUom: "kg",
+                        sizeUom: "mm",
+                        length: config.palletLength || 1200,
+                        width: config.palletWidth || 1000,
+                        height: 130,
+                        volume: calculateVolume(config),
+                        volumeUom: "m3",
+                        weight: 15,
+                        maxWeight: 2000,
+                        maxLoadWeight: 1985,
+                        externalReferences: {}
+                    }
+                },
+                loadInstructions: []
+            };
+            
+            // Generate random blocks
+            let currentZ = 0; // Start at pallet surface
+            
+            for (let i = 1; i <= numBlocks; i++) {
+                const block = generateRandomBlock(i, config, currentZ);
+                order.loadInstructions.push(block);
+                currentZ = block.z2; // Stack next block on top
+            }
+            
+            return order;
+        }
+        
+        // Generate random block
+        function generateRandomBlock(sequence, config, currentZ) {
+            const blockSizeRange = config.blockSizeRange || 'random';
+            
+            // Random dimensions based on config
+            let length, width, height;
+            
+            switch(blockSizeRange) {
+                case 'small':
+                    length = randomInt(300, 600);
+                    width = randomInt(300, 600);
+                    height = randomInt(200, 500);
+                    break;
+                case 'medium':
+                    length = randomInt(600, 1000);
+                    width = randomInt(600, 1000);
+                    height = randomInt(500, 800);
+                    break;
+                case 'large':
+                    length = randomInt(1000, 1600);
+                    width = randomInt(800, 1100);
+                    height = randomInt(800, 1200);
+                    break;
+                default: // random
+                    length = randomInt(300, 1600);
+                    width = randomInt(300, 1100);
+                    height = randomInt(200, 1200);
+            }
+            
+            // Ensure block fits on pallet
+            length = Math.min(length, config.palletLength - 50);
+            width = Math.min(width, config.palletWidth - 50);
+            
+            // Random position on pallet (with 25mm margin)
+            const x1 = randomInt(25, Math.max(25, config.palletLength - length - 25));
+            const y1 = randomInt(25, Math.max(25, config.palletWidth - width - 25));
+            
+            // Z position stacks on top of previous blocks
+            const z1 = currentZ;
+            const z2 = z1 + height;
+            
+            return {
+                id: generateUUID(),
+                serialNumber: generateSerialNumber(),
+                pickingLocation: config.autoPickingLocation 
+                    ? `BA01-${String(sequence).padStart(2, '0')}-00`
+                    : generateRandomPickingLocation(),
+                x1: x1,
+                x2: x1 + length,
+                y1: y1,
+                y2: y1 + width,
+                z1: z1,
+                z2: z2,
+                quantityX: 1,
+                quantityY: randomInt(1, 3), // Random stacking
+                quantityZ: 1,
+                sizeUom: "mm",
+                orientation: randomChoice(["LxW", "WxL"]),
+                blockType: "Cube",
+                packageId: generateUUID(),
+                sequence: sequence
+            };
+        }
+        
+        // Helper functions
+        function generateRandomId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let id = '';
+            for (let i = 0; i < 12; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        function generateSerialNumber() {
+            const prefix = randomChoice(['II', 'LF', 'HD']);
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const nums = '0123456789';
+            
+            let serial = prefix;
+            for (let i = 0; i < 4; i++) serial += chars.charAt(Math.floor(Math.random() * chars.length));
+            for (let i = 0; i < 4; i++) serial += nums.charAt(Math.floor(Math.random() * nums.length));
+            serial += randomChoice(['HSU', 'MSC', 'LPT']) + '-B' + randomInt(1, 9);
+            
+            return serial;
+        }
+        
+        function generateRandomPickingLocation() {
+            const zone = randomChoice(['BA', 'CA', 'DA']);
+            const aisle = String(randomInt(1, 20)).padStart(2, '0');
+            const level = String(randomInt(1, 5)).padStart(2, '0');
+            const position = String(randomInt(0, 10)).padStart(2, '0');
+            
+            return `${zone}${aisle}-${level}-${position}`;
+        }
+        
+        function calculateVolume(config) {
+            const volume = (config.palletLength * config.palletWidth * 130) / 1000000000;
+            return parseFloat(volume.toFixed(3));
+        }
+        
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+        
+        // API Integration
+        async function postWarehouseOrder(orderData, apiUrl) {
+            try {
+                const response = await fetch(`${apiUrl}/api/warehouse-orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                return { success: true, data: result };
+                
+            } catch (error) {
+                console.error('Failed to POST warehouse order:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function fetchStatistics(apiUrl) {
+            try {
+                const response = await fetch(`${apiUrl}/api/health`);
+                const data = await response.json();
+                
+                return {
+                    activeWarehouseOrders: data.activeWarehouseOrders || 0,
+                    totalTasks: data.totalTasks || 0,
+                    status: data.status
+                };
+            } catch (error) {
+                console.error('Failed to fetch statistics:', error);
+                return null;
+            }
+        }
+        
+        // Add order to list
+        function addOrderToList(order, result) {
+            const ordersList = document.getElementById('ordersList');
+            const orderRow = createOrderRow(order, result);
+            
+            // Prepend (newest first)
+            ordersList.insertAdjacentHTML('afterbegin', orderRow);
+        }
+        
+        // Create order row HTML
+        function createOrderRow(order, result) {
+            const status = result.success ? '✅ Success' : '❌ Failed';
+            const statusColor = result.success ? 'text-green-400' : 'text-red-400';
+            
+            return `
+                <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 order-row">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="font-mono text-sm text-orange-400">${order.resourceId}</div>
+                            <div class="text-xs text-gray-500">${order.loadInstructions.length} blocks</div>
+                        </div>
+                        <div class="${statusColor} text-sm font-medium">${status}</div>
+                    </div>
+                    
+                    ${result.success ? `
+                        <div class="flex gap-2 mt-3">
+                            <button 
+                                onclick="openTask('${result.data.urls[0].url}')"
+                                class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded transition"
+                            >
+                                🚀 Open Task 1
+                            </button>
+                            <button 
+                                onclick="toggleUrls('${order.resourceId}')"
+                                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded transition"
+                            >
+                                📋 View All URLs
+                            </button>
+                        </div>
+                        
+                        <div id="urls-${order.resourceId}" class="hidden mt-3 space-y-1">
+                            ${result.data.urls.map(url => `
+                                <div class="bg-gray-800 p-2 rounded text-xs">
+                                    <div class="text-gray-400 mb-1">Task ${url.sequence}:</div>
+                                    <a href="${url.url}" target="_blank" class="text-blue-400 hover:underline break-all font-mono">
+                                        ${url.url}
+                                    </a>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="mt-2 text-xs text-red-400 bg-red-900/20 p-2 rounded">${result.error}</div>
+                        <button 
+                            onclick="retryOrder('${order.resourceId}')"
+                            class="w-full mt-2 bg-orange-600 hover:bg-orange-500 text-white text-sm py-2 rounded transition"
+                        >
+                            🔄 Retry
+                        </button>
+                    `}
+                </div>
+            `;
+        }
+        
+        // Update statistics display
+        function updateStatistics() {
+            document.getElementById('statTotalGenerated').textContent = stats.totalGenerated;
+            document.getElementById('statSuccessful').textContent = stats.successful;
+            document.getElementById('statFailed').textContent = stats.failed;
+            
+            const successRate = stats.totalGenerated > 0 
+                ? Math.round((stats.successful / stats.totalGenerated) * 100)
+                : 0;
+            document.getElementById('statSuccessRate').textContent = successRate + '%';
+        }
+        
+        // Refresh statistics from API
+        async function refreshStatistics() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const data = await fetchStatistics(apiUrl);
+            
+            if (data) {
+                document.getElementById('statActiveWOs').textContent = data.activeWarehouseOrders;
+                document.getElementById('statTotalTasks').textContent = data.totalTasks || '~' + (data.activeWarehouseOrders * 5);
+            }
+        }
+        
+        // Open task in new tab
+        function openTask(url) {
+            window.open(url, '_blank');
+        }
+        
+        // Toggle URLs visibility
+        function toggleUrls(woId) {
+            const urlsDiv = document.getElementById(`urls-${woId}`);
+            if (urlsDiv.classList.contains('hidden')) {
+                urlsDiv.classList.remove('hidden');
+            } else {
+                urlsDiv.classList.add('hidden');
+            }
+        }
+        
+        // Retry failed order
+        async function retryOrder(woId) {
+            const failedOrder = generatedOrders.find(o => o.order.resourceId === woId);
+            if (!failedOrder) return;
+            
+            const apiUrl = document.getElementById('apiUrl').value;
+            showToast(`Retrying order ${woId}...`, 'info');
+            
+            const result = await postWarehouseOrder(failedOrder.order, apiUrl);
+            
+            if (result.success) {
+                stats.successful++;
+                stats.failed--;
+                updateStatistics();
+                showToast(`Order ${woId} successfully posted!`, 'success');
+                
+                // Remove from failed orders
+                generatedOrders = generatedOrders.filter(o => o.order.resourceId !== woId);
+                
+                // Refresh the entire list (simple approach)
+                location.reload();
+            } else {
+                showToast(`Retry failed: ${result.error}`, 'error');
+            }
+        }
+        
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                info: 'bg-blue-600'
+            };
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg toast flex items-center gap-2`;
+            toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+            
+            const container = document.getElementById('toastContainer');
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Utility: Sleep
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
