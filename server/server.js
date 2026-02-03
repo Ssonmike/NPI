@@ -101,9 +101,67 @@ app.get('/:warehouseOrderId/task/:taskId', async (req, res, next) => {
         // Mark task as in progress if pending
         await startTask(taskId);
 
+        // Convert SAP format to ORTEC format if needed
+        let ortecData = warehouseOrder.ortec_data;
+
+        if (ortecData.warehouseOrderId && ortecData.tasks) {
+            // This is SAP format, convert to ORTEC for frontend compatibility
+            const loadInstructions = [];
+
+            for (const task of ortecData.tasks) {
+                if (task.boxes && Array.isArray(task.boxes)) {
+                    for (const box of task.boxes) {
+                        loadInstructions.push({
+                            id: box.boxId,
+                            serialNumber: task.sku,
+                            pickingLocation: task.sourceLocation,
+                            x1: box.x1,
+                            x2: box.x2,
+                            y1: box.y1,
+                            y2: box.y2,
+                            z1: box.z1,
+                            z2: box.z2,
+                            quantityX: 1,
+                            quantityY: 1,
+                            quantityZ: 1,
+                            sizeUom: ortecData.uom || "mm",
+                            orientation: "LxW",
+                            blockType: "Cube",
+                            packageId: task.packageId,
+                            sequence: task.sequence
+                        });
+                    }
+                }
+            }
+
+            // Convert to ORTEC structure
+            ortecData = {
+                resourceId: ortecData.warehouseOrderId,
+                resource: {
+                    pallet: {
+                        maxHeight: ortecData.pallet.maxHeight,
+                        name: ortecData.pallet.typePallet,
+                        description: "",
+                        weightUom: "kg",
+                        sizeUom: ortecData.uom || "mm",
+                        length: ortecData.pallet.length,
+                        width: ortecData.pallet.width,
+                        height: ortecData.pallet.height,
+                        volume: (ortecData.pallet.length * ortecData.pallet.width * ortecData.pallet.height) / 1000000000,
+                        volumeUom: "m3",
+                        weight: 15,
+                        maxWeight: 2000,
+                        maxLoadWeight: 1985,
+                        externalReferences: {}
+                    }
+                },
+                loadInstructions: loadInstructions
+            };
+        }
+
         // Prepare data to embed
         const initialData = {
-            warehouseOrder: warehouseOrder.ortec_data,
+            warehouseOrder: ortecData,
             currentTask: currentTask.block_data,
             taskId: currentTask.id,
             sequence: currentTask.sequence,

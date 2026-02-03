@@ -22,7 +22,8 @@ async function createWarehouseOrder(payload, format = null) {
     if (format === 'SAP') {
         warehouseOrderId = payload.warehouseOrderId;
         tasks = payload.tasks;
-        totalTasks = tasks.length;
+        // For SAP, totalTasks is the total number of boxes (since each box becomes a warehouse_task)
+        totalTasks = tasks.reduce((sum, task) => sum + (task.boxes ? task.boxes.length : 0), 0);
     } else if (format === 'ORTEC') {
         warehouseOrderId = payload.resourceId;
         tasks = payload.loadInstructions;
@@ -59,59 +60,123 @@ async function createWarehouseOrder(payload, format = null) {
     );
 
     // Insert tasks based on format
-    for (const task of tasks) {
-        let taskId, sequence, taskData, packageId, serialNumber, pickingLocation;
+    if (format === 'SAP') {
+        // SAP format: Each task contains multiple boxes
+        // We need to create one warehouse_task row per box
+        for (const task of tasks) {
+            const { taskId, sequence, sku, packageId, sourceLocation, boxes } = task;
 
-        if (format === 'SAP') {
-            taskId = task.taskId;
-            sequence = task.sequence;
-            taskData = task;
-            packageId = task.packageId || null;
-            serialNumber = task.sku || null;
-            pickingLocation = task.sourceLocation || null;
-        } else if (format === 'ORTEC') {
-            taskId = task.id;
-            sequence = task.sequence;
-            taskData = task;
-            packageId = task.packageId || null;
-            serialNumber = task.serialNumber || null;
-            pickingLocation = task.pickingLocation || null;
+            // Insert each box as a separate warehouse_task
+            for (let boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
+                const box = boxes[boxIndex];
+
+                // Create block_data in ORTEC-compatible format for visualization
+                const blockData = {
+                    id: box.boxId,
+                    serialNumber: sku,
+                    pickingLocation: sourceLocation,
+                    x1: box.x1,
+                    x2: box.x2,
+                    y1: box.y1,
+                    y2: box.y2,
+                    z1: box.z1,
+                    z2: box.z2,
+                    quantityX: 1,
+                    quantityY: 1,
+                    quantityZ: 1,
+                    sizeUom: "mm",
+                    orientation: "LxW",
+                    blockType: "Cube",
+                    packageId: packageId,
+                    sequence: sequence,
+                    // Keep original task info for reference
+                    _taskId: taskId,
+                    _boxIndex: boxIndex + 1,
+                    _totalBoxes: boxes.length
+                };
+
+                const blockDataStr = JSON.stringify(blockData);
+
+                if (DB_TYPE === 'postgresql') {
+                    await query(
+                        `INSERT INTO warehouse_tasks 
+                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
+                 VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)`,
+                        [
+                            box.boxId,
+                            warehouseOrderId,
+                            sequence,
+                            blockDataStr,
+                            packageId,
+                            sku,
+                            sourceLocation,
+                            'PENDING'
+                        ]
+                    );
+                } else {
+                    await query(
+                        `INSERT INTO warehouse_tasks 
+                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            box.boxId,
+                            warehouseOrderId,
+                            sequence,
+                            blockDataStr,
+                            packageId,
+                            sku,
+                            sourceLocation,
+                            'PENDING'
+                        ]
+                    );
+                }
+            }
         }
+    } else if (format === 'ORTEC') {
+        // ORTEC format: Each loadInstruction is already a single block
+        for (const task of tasks) {
+            const taskId = task.id;
+            const sequence = task.sequence;
+            const taskData = task;
+            const packageId = task.packageId || null;
+            const serialNumber = task.serialNumber || null;
+            const pickingLocation = task.pickingLocation || null;
 
-        const taskDataStr = JSON.stringify(taskData);
+            const taskDataStr = JSON.stringify(taskData);
 
-        if (DB_TYPE === 'postgresql') {
-            await query(
-                `INSERT INTO warehouse_tasks 
-         (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
-         VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)`,
-                [
-                    taskId,
-                    warehouseOrderId,
-                    sequence,
-                    taskDataStr,
-                    packageId,
-                    serialNumber,
-                    pickingLocation,
-                    'PENDING'
-                ]
-            );
-        } else {
-            await query(
-                `INSERT INTO warehouse_tasks 
-         (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    taskId,
-                    warehouseOrderId,
-                    sequence,
-                    taskDataStr,
-                    packageId,
-                    serialNumber,
-                    pickingLocation,
-                    'PENDING'
-                ]
-            );
+            if (DB_TYPE === 'postgresql') {
+                await query(
+                    `INSERT INTO warehouse_tasks 
+             (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
+             VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)`,
+                    [
+                        taskId,
+                        warehouseOrderId,
+                        sequence,
+                        taskDataStr,
+                        packageId,
+                        serialNumber,
+                        pickingLocation,
+                        'PENDING'
+                    ]
+                );
+            } else {
+                await query(
+                    `INSERT INTO warehouse_tasks 
+             (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        taskId,
+                        warehouseOrderId,
+                        sequence,
+                        taskDataStr,
+                        packageId,
+                        serialNumber,
+                        pickingLocation,
+                        'PENDING'
+                    ]
+                );
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,22 +11,22 @@
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
-        
+
         .glass {
             background: rgba(30, 41, 59, 0.8);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(148, 163, 184, 0.1);
         }
-        
+
         .stat-card {
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
-        
+
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -33,13 +34,13 @@
             cursor: pointer;
             width: 100%;
         }
-        
+
         input[type="range"]::-webkit-slider-track {
             background: #334155;
             height: 0.5rem;
             border-radius: 0.25rem;
         }
-        
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -49,13 +50,13 @@
             border-radius: 50%;
             margin-top: -0.5rem;
         }
-        
+
         input[type="range"]::-moz-range-track {
             background: #334155;
             height: 0.5rem;
             border-radius: 0.25rem;
         }
-        
+
         input[type="range"]::-moz-range-thumb {
             background: #f97316;
             height: 1.5rem;
@@ -63,27 +64,29 @@
             border-radius: 50%;
             border: none;
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .order-row {
             animation: slideIn 0.3s ease-out;
         }
-        
+
         .toast {
             animation: slideIn 0.3s ease-out;
         }
     </style>
 </head>
+
 <body class="min-h-screen p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
@@ -95,7 +98,7 @@
                 Generate random warehouse orders to test the NPI Pallet Visualizer API
             </p>
         </div>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Configuration Panel -->
             <div class="lg:col-span-1">
@@ -103,102 +106,132 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
                         <span>⚙️</span> Configuration
                     </h2>
-                    
+
                     <!-- API URL -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2 text-gray-300">API URL</label>
-                        <input 
-                            id="apiUrl" 
-                            type="text" 
-                            value="http://localhost:3000"
-                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
-                        />
+                        <input id="apiUrl" type="text" value="http://localhost:3000"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none" />
                     </div>
-                    
+
                     <!-- Pallet Type -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2 text-gray-300">Pallet Type</label>
-                        <select 
-                            id="palletType"
-                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
-                        >
+                        <select id="palletType"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none">
                             <option value="euro">Euro Pallet (1200x800mm)</option>
                             <option value="standard" selected>Standard Pallet (1200x1000mm)</option>
                             <option value="large">Large Pallet (1200x1200mm)</option>
+                            <option value="lfd">LFD Pallet (2150x1100mm)</option>
                         </select>
                     </div>
-                    
-                    <!-- Number of Blocks -->
+
+                    <!-- Total Tasks -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2 text-gray-300">
-                            Number of Blocks: <span id="numBlocksValue" class="text-orange-500 font-bold">5</span>
+                            Total Tasks: <span id="totalTasksValue" class="text-orange-500 font-bold">5</span>
                         </label>
-                        <input 
-                            id="numBlocks"
-                            type="range" 
-                            min="3" 
-                            max="15" 
-                            value="5"
-                            class="w-full"
-                        />
+                        <input id="totalTasks" type="range" min="1" max="20" value="5" class="w-full" />
                     </div>
-                    
-                    <!-- Block Size Range -->
+
+                    <!-- Boxes Per Task -->
                     <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2 text-gray-300">Block Size Range</label>
-                        <select 
-                            id="blockSizeRange"
-                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
-                        >
-                            <option value="random" selected>Random (Varied)</option>
-                            <option value="small">Small (300-600mm)</option>
-                            <option value="medium">Medium (600-1000mm)</option>
-                            <option value="large">Large (1000-1600mm)</option>
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Boxes Per Task</label>
+                        <select id="boxesPerTask"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none">
+                            <option value="1-3">Few (1-3 boxes)</option>
+                            <option value="3-6" selected>Medium (3-6 boxes)</option>
+                            <option value="5-12">Many (5-12 boxes)</option>
+                            <option value="8-20">Stress Test (8-20 boxes)</option>
                         </select>
                     </div>
-                    
+
+                    <!-- Box Height -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">
+                            Box Height: <span id="boxHeightValue" class="text-orange-500 font-bold">130</span> mm
+                        </label>
+                        <input id="boxHeight" type="range" min="80" max="300" value="130" step="10" class="w-full" />
+                    </div>
+
+                    <!-- Grid Size -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Grid Layout</label>
+                        <select id="gridSize"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-orange-500 focus:outline-none">
+                            <option value="2x2">2×2 (Simple)</option>
+                            <option value="2x3" selected>2×3 (Standard)</option>
+                            <option value="3x3">3×3 (Moderate)</option>
+                            <option value="3x4">3×4 (Complex)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Grid divides pallet into regions for organized placement
+                        </p>
+                    </div>
+
+                    <!-- Support Ratio -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">
+                            Support Ratio: <span id="supportRatioValue" class="text-orange-500 font-bold">70%</span>
+                        </label>
+                        <input id="supportRatio" type="range" min="50" max="90" value="70" step="5" class="w-full" />
+                        <p class="text-xs text-gray-500 mt-1">
+                            Minimum % of box base that must be supported by boxes below
+                        </p>
+                    </div>
+
+                    <!-- Center Bias -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">
+                            Center Bias: <span id="centerBiasValue" class="text-orange-500 font-bold">80%</span>
+                        </label>
+                        <input id="centerBias" type="range" min="0" max="100" value="80" step="10" class="w-full" />
+                        <p class="text-xs text-gray-500 mt-1">
+                            Probability boxes are centered vs randomly placed in footprint
+                        </p>
+                    </div>
+
+                    <!-- Seed (optional) -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Random Seed (optional)</label>
+                        <input id="seed" type="text" placeholder="Leave empty for random"
+                            class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-mono text-sm focus:border-orange-500 focus:outline-none" />
+                        <p class="text-xs text-gray-500 mt-1">
+                            Use same seed to reproduce identical pallets
+                        </p>
+                    </div>
+
                     <!-- Auto Picking Locations -->
                     <div class="mb-6">
                         <label class="flex items-center gap-2 cursor-pointer text-gray-300">
-                            <input 
-                                id="autoPickingLocation"
-                                type="checkbox" 
-                                checked
-                                class="w-4 h-4 accent-orange-500"
-                            />
+                            <input id="autoPickingLocation" type="checkbox" checked class="w-4 h-4 accent-orange-500" />
                             <span class="text-sm">Auto-generate picking locations</span>
                         </label>
                     </div>
-                    
+
                     <!-- Generate Buttons -->
                     <div class="space-y-2">
-                        <button 
-                            onclick="generateOrders(1)"
-                            class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
-                        >
+                        <button onclick="generateOrders(1)"
+                            class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105">
                             🎲 Generate 1 Order
                         </button>
-                        <button 
-                            onclick="generateOrders(5)"
-                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
-                        >
+                        <button onclick="generateOrders(5)"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105">
                             🎲 Generate 5 Orders
                         </button>
-                        <button 
-                            onclick="generateOrders(10)"
-                            class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105"
-                        >
+                        <button onclick="generateOrders(10)"
+                            class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition transform hover:scale-105">
                             🎲 Generate 10 Orders (Stress Test)
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Statistics Panel -->
                 <div class="glass rounded-lg p-6 border border-gray-700 mt-6">
                     <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
                         <span>📊</span> Statistics
                     </h2>
-                    
+
                     <div class="space-y-3">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-400">Total Generated:</span>
@@ -216,9 +249,9 @@
                             <span class="text-gray-400">Success Rate:</span>
                             <span id="statSuccessRate" class="font-bold text-orange-400">0%</span>
                         </div>
-                        
+
                         <div class="border-t border-gray-700 my-3"></div>
-                        
+
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-400">Active WOs in DB:</span>
                             <span id="statActiveWOs" class="font-bold text-blue-400">-</span>
@@ -228,23 +261,21 @@
                             <span id="statTotalTasks" class="font-bold text-purple-400">-</span>
                         </div>
                     </div>
-                    
-                    <button 
-                        onclick="refreshStatistics()"
-                        class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition"
-                    >
+
+                    <button onclick="refreshStatistics()"
+                        class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition">
                         🔄 Refresh Stats
                     </button>
                 </div>
             </div>
-            
+
             <!-- Generated Orders List -->
             <div class="lg:col-span-2">
                 <div class="glass rounded-lg p-6 border border-gray-700">
                     <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
                         <span>📦</span> Generated Orders
                     </h2>
-                    
+
                     <div id="ordersList" class="space-y-3 max-h-[800px] overflow-y-auto pr-2">
                         <!-- Empty state -->
                         <div id="emptyState" class="text-center py-12 text-gray-500">
@@ -252,17 +283,17 @@
                             <p class="text-lg">No orders generated yet.</p>
                             <p class="text-sm mt-2">Click a generate button to create warehouse orders.</p>
                         </div>
-                        
+
                         <!-- Orders will be added here dynamically -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
-    
+
     <script>
         // Global state
         let stats = {
@@ -270,35 +301,47 @@
             successful: 0,
             failed: 0
         };
-        
+
         let generatedOrders = []; // Store orders for retry
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            // Update slider value display
-            document.getElementById('numBlocks').addEventListener('input', (e) => {
-                document.getElementById('numBlocksValue').textContent = e.target.value;
+            // Update slider value displays
+            document.getElementById('totalTasks').addEventListener('input', (e) => {
+                document.getElementById('totalTasksValue').textContent = e.target.value;
             });
-            
+
+            document.getElementById('boxHeight').addEventListener('input', (e) => {
+                document.getElementById('boxHeightValue').textContent = e.target.value;
+            });
+
+            document.getElementById('supportRatio').addEventListener('input', (e) => {
+                document.getElementById('supportRatioValue').textContent = e.target.value + '%';
+            });
+
+            document.getElementById('centerBias').addEventListener('input', (e) => {
+                document.getElementById('centerBiasValue').textContent = e.target.value + '%';
+            });
+
             // Initial stats refresh
             refreshStatistics();
         });
-        
+
         // Generate orders
         async function generateOrders(count) {
             const apiUrl = document.getElementById('apiUrl').value;
             const config = getConfiguration();
-            
+
             const emptyState = document.getElementById('emptyState');
             if (emptyState) emptyState.style.display = 'none';
-            
+
             // Show loading indicator
-            showToast(`Generating ${count} warehouse order(s)...`, 'info');
-            
+            showToast(`Generating ${count} SAP warehouse order(s)...`, 'info');
+
             for (let i = 0; i < count; i++) {
-                const order = generateRandomWarehouseOrder(config);
+                const order = generateSAPWarehouseOrder(config);
                 const result = await postWarehouseOrder(order, apiUrl);
-                
+
                 // Update stats
                 stats.totalGenerated++;
                 if (result.success) {
@@ -307,158 +350,621 @@
                     stats.failed++;
                     generatedOrders.push({ order, failed: true });
                 }
-                
+
                 // Add to list
                 addOrderToList(order, result);
                 updateStatistics();
-                
+
                 // Small delay between requests to avoid overwhelming server
                 if (i < count - 1) {
                     await sleep(100);
                 }
             }
-            
-            showToast(`${count} warehouse order(s) generated!`, 'success');
+
+            showToast(`${count} SAP warehouse order(s) generated!`, 'success');
             refreshStatistics();
         }
-        
+
         // Get configuration from form
         function getConfiguration() {
-            const palletType = document.getElementById('palletType').value;
-            const numBlocks = parseInt(document.getElementById('numBlocks').value);
-            const blockSizeRange = document.getElementById('blockSizeRange').value;
+            const totalTasks = parseInt(document.getElementById('totalTasks').value);
+            const boxesPerTask = document.getElementById('boxesPerTask').value;
+            const boxHeight = parseInt(document.getElementById('boxHeight').value);
+            const gridSize = document.getElementById('gridSize').value;
+            const supportRatio = parseInt(document.getElementById('supportRatio').value) / 100;
+            const centerBias = parseInt(document.getElementById('centerBias').value) / 100;
+            const seed = document.getElementById('seed').value.trim();
             const autoPickingLocation = document.getElementById('autoPickingLocation').checked;
-            
-            let palletLength, palletWidth;
-            switch(palletType) {
+
+            const [minBoxes, maxBoxes] = boxesPerTask.split('-').map(n => parseInt(n));
+
+            const palletType = document.getElementById('palletType').value;
+            let palletLength, palletWidth, palletHeight, palletMaxHeight, typePallet;
+
+            switch (palletType) {
                 case 'euro':
                     palletLength = 1200;
                     palletWidth = 800;
+                    palletHeight = 144;
+                    palletMaxHeight = 2000;
+                    typePallet = 'Euro Pallet';
                     break;
                 case 'large':
                     palletLength = 1200;
                     palletWidth = 1200;
+                    palletHeight = 144;
+                    palletMaxHeight = 2500;
+                    typePallet = 'Large Pallet';
+                    break;
+                case 'lfd':
+                    palletLength = 2150;
+                    palletWidth = 1100;
+                    palletHeight = 130;
+                    palletMaxHeight = 2300;
+                    typePallet = 'LFD Pallet';
                     break;
                 default: // standard
                     palletLength = 1200;
                     palletWidth = 1000;
+                    palletHeight = 130;
+                    palletMaxHeight = 2300;
+                    typePallet = 'Standard Pallet';
             }
-            
+
             return {
                 palletLength,
                 palletWidth,
-                numBlocks,
-                blockSizeRange,
+                palletHeight,
+                palletMaxHeight,
+                palletType: typePallet,
+                totalTasks,
+                minBoxesPerTask: minBoxes,
+                maxBoxesPerTask: maxBoxes,
+                boxHeight,
+                gridSize,
+                supportRatio,
+                centerBias,
                 autoPickingLocation,
-                palletType: palletType.charAt(0).toUpperCase() + palletType.slice(1) + ' Pallet'
+                seed: seed ? seed : null
             };
         }
-        
-        // Generate random warehouse order
-        function generateRandomWarehouseOrder(config) {
-            const woId = `PAL_${generateRandomId()}`;
-            const numBlocks = config.numBlocks || randomInt(3, 15);
-            
-            const order = {
-                resourceId: woId,
-                resource: {
-                    pallet: {
-                        maxHeight: 2300,
-                        name: config.palletType || "Auto-Generated Test Pallet",
-                        description: `Generated at ${new Date().toISOString()}`,
-                        weightUom: "kg",
-                        sizeUom: "mm",
-                        length: config.palletLength || 1200,
-                        width: config.palletWidth || 1000,
-                        height: 130,
-                        volume: calculateVolume(config),
-                        volumeUom: "m3",
-                        weight: 15,
-                        maxWeight: 2000,
-                        maxLoadWeight: 1985,
-                        externalReferences: {}
+
+        // ========== STABILITY ENGINE CLASSES ==========
+
+        // PalletGrid: Divides pallet into organized regions
+        class PalletGrid {
+            constructor(palletLength, palletWidth, gridRows, gridCols) {
+                this.palletLength = palletLength;
+                this.palletWidth = palletWidth;
+                this.rows = gridRows;
+                this.cols = gridCols;
+
+                this.cellWidth = palletLength / gridCols;
+                this.cellHeight = palletWidth / gridRows;
+
+                this.occupancy = Array(gridRows).fill(0).map(() => Array(gridCols).fill(null));
+            }
+
+            getCellBounds(row, col) {
+                const margin = 15;
+
+                return {
+                    x1: Math.round(col * this.cellWidth + margin),
+                    x2: Math.round((col + 1) * this.cellWidth - margin),
+                    y1: Math.round(row * this.cellHeight + margin),
+                    y2: Math.round((row + 1) * this.cellHeight - margin)
+                };
+            }
+
+            allocateFootprint(footprintId, numCells) {
+                const cells = [];
+
+                for (let row = 0; row < this.rows; row++) {
+                    for (let col = 0; col < this.cols; col++) {
+                        if (this.occupancy[row][col] === null) {
+                            const allocated = this.tryAllocate(footprintId, row, col, numCells);
+                            if (allocated.length === numCells) {
+                                return allocated;
+                            }
+                        }
                     }
-                },
-                loadInstructions: []
-            };
-            
-            // Generate random blocks
-            let currentZ = 0; // Start at pallet surface
-            
-            for (let i = 1; i <= numBlocks; i++) {
-                const block = generateRandomBlock(i, config, currentZ);
-                order.loadInstructions.push(block);
-                currentZ = block.z2; // Stack next block on top
+                }
+
+                return [];
             }
-            
-            return order;
+
+            tryAllocate(footprintId, startRow, startCol, numCells) {
+                const allocated = [];
+
+                if (numCells === 1) {
+                    if (this.occupancy[startRow][startCol] === null) {
+                        this.occupancy[startRow][startCol] = footprintId;
+                        allocated.push({ row: startRow, col: startCol });
+                    }
+                } else if (numCells === 2) {
+                    if (startCol + 1 < this.cols &&
+                        this.occupancy[startRow][startCol] === null &&
+                        this.occupancy[startRow][startCol + 1] === null) {
+
+                        this.occupancy[startRow][startCol] = footprintId;
+                        this.occupancy[startRow][startCol + 1] = footprintId;
+                        allocated.push({ row: startRow, col: startCol });
+                        allocated.push({ row: startRow, col: startCol + 1 });
+                    } else if (startRow + 1 < this.rows &&
+                        this.occupancy[startRow][startCol] === null &&
+                        this.occupancy[startRow + 1][startCol] === null) {
+
+                        this.occupancy[startRow][startCol] = footprintId;
+                        this.occupancy[startRow + 1][startCol] = footprintId;
+                        allocated.push({ row: startRow, col: startCol });
+                        allocated.push({ row: startRow + 1, col: startCol });
+                    }
+                } else if (numCells === 4) {
+                    if (startRow + 1 < this.rows && startCol + 1 < this.cols &&
+                        this.occupancy[startRow][startCol] === null &&
+                        this.occupancy[startRow][startCol + 1] === null &&
+                        this.occupancy[startRow + 1][startCol] === null &&
+                        this.occupancy[startRow + 1][startCol + 1] === null) {
+
+                        for (let r = startRow; r <= startRow + 1; r++) {
+                            for (let c = startCol; c <= startCol + 1; c++) {
+                                this.occupancy[r][c] = footprintId;
+                                allocated.push({ row: r, col: c });
+                            }
+                        }
+                    }
+                }
+
+                return allocated;
+            }
+
+            getFootprintBounds(cells) {
+                const bounds = cells.map(c => this.getCellBounds(c.row, c.col));
+
+                return {
+                    x1: Math.min(...bounds.map(b => b.x1)),
+                    x2: Math.max(...bounds.map(b => b.x2)),
+                    y1: Math.min(...bounds.map(b => b.y1)),
+                    y2: Math.max(...bounds.map(b => b.y2))
+                };
+            }
         }
-        
-        // Generate random block
-        function generateRandomBlock(sequence, config, currentZ) {
-            const blockSizeRange = config.blockSizeRange || 'random';
-            
-            // Random dimensions based on config
-            let length, width, height;
-            
-            switch(blockSizeRange) {
-                case 'small':
-                    length = randomInt(300, 600);
-                    width = randomInt(300, 600);
-                    height = randomInt(200, 500);
-                    break;
-                case 'medium':
-                    length = randomInt(600, 1000);
-                    width = randomInt(600, 1000);
-                    height = randomInt(500, 800);
-                    break;
-                case 'large':
-                    length = randomInt(1000, 1600);
-                    width = randomInt(800, 1100);
-                    height = randomInt(800, 1200);
-                    break;
-                default: // random
-                    length = randomInt(300, 1600);
-                    width = randomInt(300, 1100);
-                    height = randomInt(200, 1200);
+
+        // StableFootprint: Manages box placement within grid cells
+        class StableFootprint {
+            constructor(id, cells, bounds) {
+                this.id = id;
+                this.cells = cells;
+                this.bounds = bounds;
+                this.width = bounds.x2 - bounds.x1;
+                this.depth = bounds.y2 - bounds.y1;
+                this.area = this.width * this.depth;
             }
-            
-            // Ensure block fits on pallet
-            length = Math.min(length, config.palletLength - 50);
-            width = Math.min(width, config.palletWidth - 50);
-            
-            // Random position on pallet (with 25mm margin)
-            const x1 = randomInt(25, Math.max(25, config.palletLength - length - 25));
-            const y1 = randomInt(25, Math.max(25, config.palletWidth - width - 25));
-            
-            // Z position stacks on top of previous blocks
-            const z1 = currentZ;
-            const z2 = z1 + height;
-            
+
+            generateBoxPosition(boxWidth, boxDepth, centerBias = 0.8) {
+                const maxX = this.bounds.x2 - boxWidth;
+                const maxY = this.bounds.y2 - boxDepth;
+
+                if (maxX < this.bounds.x1 || maxY < this.bounds.y1) {
+                    return {
+                        x1: this.bounds.x1,
+                        x2: this.bounds.x2,
+                        y1: this.bounds.y1,
+                        y2: this.bounds.y2
+                    };
+                }
+
+                if (Math.random() < centerBias) {
+                    const centerX = (this.bounds.x1 + this.bounds.x2) / 2;
+                    const centerY = (this.bounds.y1 + this.bounds.y2) / 2;
+
+                    const x1 = Math.round(centerX - boxWidth / 2);
+                    const y1 = Math.round(centerY - boxDepth / 2);
+
+                    return {
+                        x1: Math.max(this.bounds.x1, x1),
+                        x2: Math.min(this.bounds.x2, x1 + boxWidth),
+                        y1: Math.max(this.bounds.y1, y1),
+                        y2: Math.min(this.bounds.y2, y1 + boxDepth)
+                    };
+                } else {
+                    const x1 = randomInt(this.bounds.x1, maxX);
+                    const y1 = randomInt(this.bounds.y1, maxY);
+
+                    return {
+                        x1,
+                        x2: x1 + boxWidth,
+                        y1,
+                        y2: y1 + boxDepth
+                    };
+                }
+            }
+        }
+
+        // SupportValidator: Validates box support
+        class SupportValidator {
+            static hasAdequateSupport(boxAbove, boxesBelow, minSupportRatio = 0.7) {
+                if (!boxesBelow || boxesBelow.length === 0) {
+                    return true;
+                }
+
+                const boxArea = (boxAbove.x2 - boxAbove.x1) * (boxAbove.y2 - boxAbove.y1);
+                let supportedArea = 0;
+
+                for (const boxBelow of boxesBelow) {
+                    const overlap = this.calculateOverlapArea(boxAbove, boxBelow);
+                    supportedArea += overlap;
+                }
+
+                const supportRatio = supportedArea / boxArea;
+                return supportRatio >= minSupportRatio;
+            }
+
+            static calculateOverlapArea(box1, box2) {
+                const overlapX = Math.max(0, Math.min(box1.x2, box2.x2) - Math.max(box1.x1, box2.x1));
+                const overlapY = Math.max(0, Math.min(box1.y2, box2.y2) - Math.max(box1.y1, box2.y1));
+
+                return overlapX * overlapY;
+            }
+
+            static getBoxesInLayer(allBoxes, targetZ1, tolerance = 20) {
+                return allBoxes.filter(box =>
+                    Math.abs(box.z1 - targetZ1) < tolerance
+                );
+            }
+        }
+
+        // LayerBuilder: Builds pallet layer-by-layer
+        class LayerBuilder {
+            constructor(config) {
+                this.palletMaxHeight = config.palletMaxHeight || 2300;
+                this.currentZ = 0;
+                this.layerHeight = config.boxHeight || 130;
+                this.allBoxes = [];
+                this.supportRatio = config.supportRatio || 0.7;
+            }
+
+            generateTaskBoxesInLayer(params) {
+                const { footprint, taskId, packageId, numBoxes, sku, sourceLocation, centerBias } = params;
+                const boxes = [];
+
+                const maxBoxWidth = footprint.width * 0.9;
+                const maxBoxDepth = footprint.depth * 0.9;
+
+                for (let i = 1; i <= numBoxes; i++) {
+                    const boxWidth = randomInt(
+                        Math.min(300, maxBoxWidth * 0.5),
+                        Math.min(600, maxBoxWidth)
+                    );
+                    const boxDepth = randomInt(
+                        Math.min(300, maxBoxDepth * 0.5),
+                        Math.min(500, maxBoxDepth)
+                    );
+
+                    const { x1, x2, y1, y2 } = footprint.generateBoxPosition(
+                        boxWidth,
+                        boxDepth,
+                        centerBias
+                    );
+
+                    const z1 = this.currentZ;
+                    const z2 = z1 + this.layerHeight;
+
+                    if (z2 > this.palletMaxHeight) {
+                        break;
+                    }
+
+                    const boxAbove = { x1, x2, y1, y2, z1, z2 };
+                    const boxesBelow = SupportValidator.getBoxesInLayer(
+                        this.allBoxes,
+                        z1 - this.layerHeight
+                    );
+
+                    const hasSupport = SupportValidator.hasAdequateSupport(
+                        boxAbove,
+                        boxesBelow,
+                        this.supportRatio
+                    );
+
+                    if (!hasSupport && z1 > 0) {
+                        continue;
+                    }
+
+                    const boxId = generateUUID();
+
+                    const box = {
+                        boxId: boxId,
+                        x1, x2, y1, y2, z1, z2
+                    };
+
+                    boxes.push(box);
+                    this.allBoxes.push(box);
+                }
+
+                return boxes;
+            }
+
+            nextLayer() {
+                this.currentZ += this.layerHeight;
+            }
+
+            canAddLayer() {
+                return (this.currentZ + this.layerHeight) <= this.palletMaxHeight;
+            }
+        }
+
+        // ========== GENERATE FOOTPRINTS (SAP-LIKE SLOTS) ==========
+        function generateFootprints(config) {
+            const { palletLength, palletWidth, footprintCount } = config;
+            const footprints = [];
+            const margin = 15;
+
+            // SAP-like mode: Create fixed slots that divide the pallet
+            if (footprintCount <= 4) {
+                // Mode A: Fixed slots (2-4 regions)
+                if (footprintCount === 1) {
+                    // Single large footprint
+                    footprints.push(new Footprint(
+                        margin,
+                        palletLength - margin,
+                        margin,
+                        palletWidth - margin
+                    ));
+                } else if (footprintCount === 2) {
+                    // Split horizontally
+                    const midX = Math.floor(palletLength / 2);
+                    footprints.push(new Footprint(margin, midX - 10, margin, palletWidth - margin));
+                    footprints.push(new Footprint(midX + 10, palletLength - margin, margin, palletWidth - margin));
+                } else if (footprintCount === 3) {
+                    // 2 on bottom, 1 on top
+                    const midX = Math.floor(palletLength / 2);
+                    const midY = Math.floor(palletWidth / 2);
+                    footprints.push(new Footprint(margin, midX - 10, margin, midY - 10));
+                    footprints.push(new Footprint(midX + 10, palletLength - margin, margin, midY - 10));
+                    footprints.push(new Footprint(margin, palletLength - margin, midY + 10, palletWidth - margin));
+                } else { // 4
+                    // Quadrants
+                    const midX = Math.floor(palletLength / 2);
+                    const midY = Math.floor(palletWidth / 2);
+                    footprints.push(new Footprint(margin, midX - 10, margin, midY - 10));
+                    footprints.push(new Footprint(midX + 10, palletLength - margin, margin, midY - 10));
+                    footprints.push(new Footprint(margin, midX - 10, midY + 10, palletWidth - margin));
+                    footprints.push(new Footprint(midX + 10, palletLength - margin, midY + 10, palletWidth - margin));
+                }
+            } else {
+                // Mode B: Random footprints (5-8 regions for stress test)
+                const minFootprintSize = 400;
+                const maxFootprintSize = 800;
+                const maxAttempts = 100;
+
+                for (let i = 0; i < footprintCount; i++) {
+                    let placed = false;
+                    let attempts = 0;
+
+                    while (!placed && attempts < maxAttempts) {
+                        attempts++;
+
+                        const width = randomInt(minFootprintSize, Math.min(maxFootprintSize, palletLength - 2 * margin));
+                        const depth = randomInt(minFootprintSize, Math.min(maxFootprintSize, palletWidth - 2 * margin));
+
+                        const x1 = randomInt(margin, palletLength - width - margin);
+                        const y1 = randomInt(margin, palletWidth - depth - margin);
+                        const x2 = x1 + width;
+                        const y2 = y1 + depth;
+
+                        const newFootprint = new Footprint(x1, x2, y1, y2);
+
+                        const hasOverlap = footprints.some(fp => fp.overlaps(newFootprint));
+
+                        if (!hasOverlap) {
+                            footprints.push(newFootprint);
+                            placed = true;
+                        }
+                    }
+                }
+            }
+
+            return footprints;
+        }
+
+        // ========== GENERATE TASK (SAP FORMAT) ==========
+        function generateTask(params) {
+            const { taskIndex, footprints, heightMap, config } = params;
+
+            const primaryFootprint = footprints[taskIndex % footprints.length];
+
+            const taskId = `WT_${String(taskIndex).padStart(6, '0')}`;
+            const packageId = generateUUID();
+            const sku = generateRandomSKU();
+            const sourceLocation = generatePickingLocation(taskIndex, config);
+
+            const numBoxes = randomInt(config.minBoxesPerTask || 1, config.maxBoxesPerTask || 8);
+
+            const boxes = [];
+
+            for (let boxIndex = 1; boxIndex <= numBoxes; boxIndex++) {
+                const boxHeight = config.boxHeight || randomInt(100, 200);
+                const boxWidth = randomInt(300, Math.min(600, primaryFootprint.width));
+                const boxDepth = randomInt(300, Math.min(500, primaryFootprint.depth));
+
+                const { x1, x2, y1, y2 } = primaryFootprint.getRandomBoxPosition(boxWidth, boxDepth);
+
+                const z1 = heightMap.getMaxHeight(x1, x2, y1, y2);
+                const z2 = z1 + boxHeight;
+
+                if (z2 > config.palletMaxHeight) {
+                    break;
+                }
+
+                // Generate unique boxId using UUID to prevent collisions
+                const boxId = generateUUID();
+
+                boxes.push({
+                    boxId: boxId,
+                    x1, x2, y1, y2, z1, z2
+                });
+
+                heightMap.updateHeight(x1, x2, y1, y2, z2);
+            }
+
             return {
-                id: generateUUID(),
-                serialNumber: generateSerialNumber(),
-                pickingLocation: config.autoPickingLocation 
-                    ? `BA01-${String(sequence).padStart(2, '0')}-00`
-                    : generateRandomPickingLocation(),
-                x1: x1,
-                x2: x1 + length,
-                y1: y1,
-                y2: y1 + width,
-                z1: z1,
-                z2: z2,
-                quantityX: 1,
-                quantityY: randomInt(1, 3), // Random stacking
-                quantityZ: 1,
-                sizeUom: "mm",
-                orientation: randomChoice(["LxW", "WxL"]),
-                blockType: "Cube",
-                packageId: generateUUID(),
-                sequence: sequence
+                taskId,
+                sequence: taskIndex,
+                sourceLocation,
+                sku,
+                packageId,
+                quantity: boxes.length,
+                boxes
             };
         }
-        
-        // Helper functions
+
+        // ========== GENERATE SAP WAREHOUSE ORDER ==========
+        function generateSAPWarehouseOrder(config) {
+            const palletLength = config.palletLength || 1200;
+            const palletWidth = config.palletWidth || 1000;
+            const palletHeight = config.palletHeight || 130;
+            const palletMaxHeight = config.palletMaxHeight || 2300;
+            const totalTasks = config.totalTasks || randomInt(3, 8);
+            const boxHeight = config.boxHeight || 130;
+            const supportRatio = config.supportRatio || 0.7;
+            const centerBias = config.centerBias || 0.8;
+
+            // Grid configuration based on pallet size
+            let gridRows, gridCols;
+            if (config.gridSize) {
+                [gridRows, gridCols] = config.gridSize.split('x').map(n => parseInt(n));
+            } else {
+                if (palletLength >= 2000) {
+                    gridRows = 3;
+                    gridCols = 4;
+                } else if (palletLength >= 1200) {
+                    gridRows = 2;
+                    gridCols = 3;
+                } else {
+                    gridRows = 2;
+                    gridCols = 2;
+                }
+            }
+
+            // Initialize grid
+            const grid = new PalletGrid(palletLength, palletWidth, gridRows, gridCols);
+
+            // Allocate footprints to tasks
+            const footprints = [];
+            for (let i = 0; i < totalTasks; i++) {
+                const footprintId = `FP_${i + 1}`;
+                const cellsNeeded = randomChoice([1, 1, 2, 2, 4]);
+
+                const cells = grid.allocateFootprint(footprintId, cellsNeeded);
+
+                if (cells.length > 0) {
+                    const bounds = grid.getFootprintBounds(cells);
+                    footprints.push(new StableFootprint(footprintId, cells, bounds));
+                }
+            }
+
+            // Initialize layer builder
+            const layerBuilder = new LayerBuilder({
+                palletMaxHeight,
+                boxHeight,
+                supportRatio
+            });
+
+            // Generate tasks layer-by-layer
+            const tasks = [];
+            let taskIndex = 1;
+
+            while (layerBuilder.canAddLayer() && taskIndex <= totalTasks) {
+                const footprint = footprints[(taskIndex - 1) % footprints.length];
+
+                const taskId = `WT_${String(taskIndex).padStart(6, '0')}`;
+                const packageId = generateUUID();
+                const sku = generateRandomSKU();
+                const sourceLocation = generatePickingLocation(taskIndex, config);
+
+                const numBoxesThisLayer = randomInt(
+                    config.minBoxesPerTask || 1,
+                    Math.min(config.maxBoxesPerTask || 6, 4)
+                );
+
+                const boxes = layerBuilder.generateTaskBoxesInLayer({
+                    footprint,
+                    taskId,
+                    packageId,
+                    numBoxes: numBoxesThisLayer,
+                    sku,
+                    sourceLocation,
+                    centerBias
+                });
+
+                if (boxes.length > 0) {
+                    tasks.push({
+                        taskId,
+                        sequence: taskIndex,
+                        sourceLocation,
+                        sku,
+                        packageId,
+                        quantity: boxes.length,
+                        boxes
+                    });
+
+                    taskIndex++;
+                }
+
+                // Advance to next layer after every 2-3 tasks
+                if (taskIndex % 3 === 0) {
+                    layerBuilder.nextLayer();
+                }
+            }
+
+            const warehouseOrderId = `PAL_${generateRandomId()}`;
+
+            return {
+                warehouseOrderId,
+                uom: "mm",
+                pallet: {
+                    typePallet: config.palletType || "Standard Pallet",
+                    length: palletLength,
+                    width: palletWidth,
+                    height: palletHeight,
+                    maxHeight: palletMaxHeight
+                },
+                tasks
+            };
+        }
+
+        // ========== HELPER FUNCTIONS ==========
+        function generateRandomSKU() {
+            const prefixes = ['IIT', 'LFD', 'HDR', 'MSC', 'QSC'];
+            const prefix = randomChoice(prefixes);
+            const number = randomInt(1000, 9999);
+            const suffix = randomChoice(['QSC-B1', 'MSC-A2', 'LPT-C3', 'HSU-D4']);
+
+            return `${prefix}${number}${suffix}`;
+        }
+
+        function generatePickingLocation(taskIndex, config) {
+            if (config.autoPickingLocation) {
+                const aisle = String(Math.floor(taskIndex / 10) + 1).padStart(2, '0');
+                const level = String((taskIndex % 10)).padStart(2, '0');
+                return `BA${aisle}-${level}-00`;
+            } else {
+                const zone = randomChoice(['BA', 'CA', 'DA', 'EA']);
+                const aisle = String(randomInt(1, 25)).padStart(2, '0');
+                const level = String(randomInt(1, 8)).padStart(2, '0');
+                const position = String(randomInt(0, 15)).padStart(2, '0');
+                return `${zone}${aisle}-${level}-${position}`;
+            }
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         function generateRandomId() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let id = '';
@@ -467,50 +973,15 @@
             }
             return id;
         }
-        
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-        
-        function generateSerialNumber() {
-            const prefix = randomChoice(['II', 'LF', 'HD']);
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const nums = '0123456789';
-            
-            let serial = prefix;
-            for (let i = 0; i < 4; i++) serial += chars.charAt(Math.floor(Math.random() * chars.length));
-            for (let i = 0; i < 4; i++) serial += nums.charAt(Math.floor(Math.random() * nums.length));
-            serial += randomChoice(['HSU', 'MSC', 'LPT']) + '-B' + randomInt(1, 9);
-            
-            return serial;
-        }
-        
-        function generateRandomPickingLocation() {
-            const zone = randomChoice(['BA', 'CA', 'DA']);
-            const aisle = String(randomInt(1, 20)).padStart(2, '0');
-            const level = String(randomInt(1, 5)).padStart(2, '0');
-            const position = String(randomInt(0, 10)).padStart(2, '0');
-            
-            return `${zone}${aisle}-${level}-${position}`;
-        }
-        
-        function calculateVolume(config) {
-            const volume = (config.palletLength * config.palletWidth * 130) / 1000000000;
-            return parseFloat(volume.toFixed(3));
-        }
-        
+
         function randomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-        
+
         function randomChoice(array) {
             return array[Math.floor(Math.random() * array.length)];
         }
-        
+
         // API Integration
         async function postWarehouseOrder(orderData, apiUrl) {
             try {
@@ -521,26 +992,26 @@
                     },
                     body: JSON.stringify(orderData)
                 });
-                
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
-                
+
                 const result = await response.json();
                 return { success: true, data: result };
-                
+
             } catch (error) {
                 console.error('Failed to POST warehouse order:', error);
                 return { success: false, error: error.message };
             }
         }
-        
+
         async function fetchStatistics(apiUrl) {
             try {
                 const response = await fetch(`${apiUrl}/api/health`);
                 const data = await response.json();
-                
+
                 return {
                     activeWarehouseOrders: data.activeWarehouseOrders || 0,
                     totalTasks: data.totalTasks || 0,
@@ -551,27 +1022,30 @@
                 return null;
             }
         }
-        
+
         // Add order to list
         function addOrderToList(order, result) {
             const ordersList = document.getElementById('ordersList');
             const orderRow = createOrderRow(order, result);
-            
+
             // Prepend (newest first)
             ordersList.insertAdjacentHTML('afterbegin', orderRow);
         }
-        
+
         // Create order row HTML
         function createOrderRow(order, result) {
             const status = result.success ? '✅ Success' : '❌ Failed';
             const statusColor = result.success ? 'text-green-400' : 'text-red-400';
-            
+
+            // Calculate total boxes from all tasks
+            const totalBoxes = order.tasks ? order.tasks.reduce((sum, task) => sum + task.boxes.length, 0) : 0;
+
             return `
                 <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 order-row">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <div class="font-mono text-sm text-orange-400">${order.resourceId}</div>
-                            <div class="text-xs text-gray-500">${order.loadInstructions.length} blocks</div>
+                            <div class="font-mono text-sm text-orange-400">${order.warehouseOrderId}</div>
+                            <div class="text-xs text-gray-500">${order.tasks ? order.tasks.length : 0} tasks, ${totalBoxes} boxes</div>
                         </div>
                         <div class="${statusColor} text-sm font-medium">${status}</div>
                     </div>
@@ -585,14 +1059,14 @@
                                 🚀 Open Task 1
                             </button>
                             <button 
-                                onclick="toggleUrls('${order.resourceId}')"
+                                onclick="toggleUrls('${order.warehouseOrderId}')"
                                 class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded transition"
                             >
                                 📋 View All URLs
                             </button>
                         </div>
                         
-                        <div id="urls-${order.resourceId}" class="hidden mt-3 space-y-1">
+                        <div id="urls-${order.warehouseOrderId}" class="hidden mt-3 space-y-1">
                             ${result.data.urls.map(url => `
                                 <div class="bg-gray-800 p-2 rounded text-xs">
                                     <div class="text-gray-400 mb-1">Task ${url.sequence}:</div>
@@ -605,7 +1079,7 @@
                     ` : `
                         <div class="mt-2 text-xs text-red-400 bg-red-900/20 p-2 rounded">${result.error}</div>
                         <button 
-                            onclick="retryOrder('${order.resourceId}')"
+                            onclick="retryOrder('${order.warehouseOrderId}')"
                             class="w-full mt-2 bg-orange-600 hover:bg-orange-500 text-white text-sm py-2 rounded transition"
                         >
                             🔄 Retry
@@ -614,35 +1088,35 @@
                 </div>
             `;
         }
-        
+
         // Update statistics display
         function updateStatistics() {
             document.getElementById('statTotalGenerated').textContent = stats.totalGenerated;
             document.getElementById('statSuccessful').textContent = stats.successful;
             document.getElementById('statFailed').textContent = stats.failed;
-            
-            const successRate = stats.totalGenerated > 0 
+
+            const successRate = stats.totalGenerated > 0
                 ? Math.round((stats.successful / stats.totalGenerated) * 100)
                 : 0;
             document.getElementById('statSuccessRate').textContent = successRate + '%';
         }
-        
+
         // Refresh statistics from API
         async function refreshStatistics() {
             const apiUrl = document.getElementById('apiUrl').value;
             const data = await fetchStatistics(apiUrl);
-            
+
             if (data) {
                 document.getElementById('statActiveWOs').textContent = data.activeWarehouseOrders;
                 document.getElementById('statTotalTasks').textContent = data.totalTasks || '~' + (data.activeWarehouseOrders * 5);
             }
         }
-        
+
         // Open task in new tab
         function openTask(url) {
             window.open(url, '_blank');
         }
-        
+
         // Toggle URLs visibility
         function toggleUrls(woId) {
             const urlsDiv = document.getElementById(`urls-${woId}`);
@@ -652,33 +1126,33 @@
                 urlsDiv.classList.add('hidden');
             }
         }
-        
+
         // Retry failed order
         async function retryOrder(woId) {
-            const failedOrder = generatedOrders.find(o => o.order.resourceId === woId);
+            const failedOrder = generatedOrders.find(o => o.order.warehouseOrderId === woId);
             if (!failedOrder) return;
-            
+
             const apiUrl = document.getElementById('apiUrl').value;
             showToast(`Retrying order ${woId}...`, 'info');
-            
+
             const result = await postWarehouseOrder(failedOrder.order, apiUrl);
-            
+
             if (result.success) {
                 stats.successful++;
                 stats.failed--;
                 updateStatistics();
                 showToast(`Order ${woId} successfully posted!`, 'success');
-                
+
                 // Remove from failed orders
-                generatedOrders = generatedOrders.filter(o => o.order.resourceId !== woId);
-                
+                generatedOrders = generatedOrders.filter(o => o.order.warehouseOrderId !== woId);
+
                 // Refresh the entire list (simple approach)
                 location.reload();
             } else {
                 showToast(`Retry failed: ${result.error}`, 'error');
             }
         }
-        
+
         // Toast notifications
         function showToast(message, type = 'info') {
             const colors = {
@@ -686,20 +1160,20 @@
                 error: 'bg-red-600',
                 info: 'bg-blue-600'
             };
-            
+
             const icons = {
                 success: '✅',
                 error: '❌',
                 info: 'ℹ️'
             };
-            
+
             const toast = document.createElement('div');
             toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg toast flex items-center gap-2`;
             toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
-            
+
             const container = document.getElementById('toastContainer');
             container.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(10px)';
@@ -707,11 +1181,12 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
-        
+
         // Utility: Sleep
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
     </script>
 </body>
+
 </html>
