@@ -2,14 +2,37 @@ const { query, queryOne, DB_TYPE } = require('../config/database');
 
 /**
  * Create a new warehouse order with tasks
+ * Supports both SAP and ORTEC formats
  */
-async function createWarehouseOrder(ortecData) {
-    const { resourceId, resource, loadInstructions } = ortecData;
+async function createWarehouseOrder(payload, format = null) {
+    // Detect format if not provided
+    if (!format) {
+        if (payload.warehouseOrderId && payload.tasks) {
+            format = 'SAP';
+        } else if (payload.resourceId && payload.loadInstructions) {
+            format = 'ORTEC';
+        } else {
+            throw new Error('Unknown format');
+        }
+    }
+
+    let warehouseOrderId, tasks, totalTasks;
+
+    // Extract data based on format
+    if (format === 'SAP') {
+        warehouseOrderId = payload.warehouseOrderId;
+        tasks = payload.tasks;
+        totalTasks = tasks.length;
+    } else if (format === 'ORTEC') {
+        warehouseOrderId = payload.resourceId;
+        tasks = payload.loadInstructions;
+        totalTasks = tasks.length;
+    }
 
     // Prepare data based on DB type
-    const ortecDataStr = DB_TYPE === 'postgresql'
-        ? JSON.stringify(ortecData)
-        : JSON.stringify(ortecData);
+    const payloadStr = DB_TYPE === 'postgresql'
+        ? JSON.stringify(payload)
+        : JSON.stringify(payload);
 
     // Insert warehouse order (UPSERT - replace if exists)
     if (DB_TYPE === 'postgresql') {
@@ -18,26 +41,44 @@ async function createWarehouseOrder(ortecData) {
        VALUES ($1, $2::jsonb, $3, $4)
        ON CONFLICT (id) DO UPDATE 
        SET ortec_data = $2::jsonb, status = $3, total_tasks = $4, created_at = NOW()`,
-            [resourceId, ortecDataStr, 'ACTIVE', loadInstructions.length]
+            [warehouseOrderId, payloadStr, 'ACTIVE', totalTasks]
         );
     } else {
         // SQLite
         await query(
             `INSERT OR REPLACE INTO warehouse_orders (id, ortec_data, status, total_tasks, created_at)
        VALUES (?, ?, ?, ?, datetime('now'))`,
-            [resourceId, ortecDataStr, 'ACTIVE', loadInstructions.length]
+            [warehouseOrderId, payloadStr, 'ACTIVE', totalTasks]
         );
     }
 
     // Delete existing tasks for this warehouse order (if any)
     await query(
         `DELETE FROM warehouse_tasks WHERE warehouse_order_id = ${DB_TYPE === 'postgresql' ? '$1' : '?'}`,
-        [resourceId]
+        [warehouseOrderId]
     );
 
-    // Insert tasks
-    for (const instruction of loadInstructions) {
-        const blockDataStr = JSON.stringify(instruction);
+    // Insert tasks based on format
+    for (const task of tasks) {
+        let taskId, sequence, taskData, packageId, serialNumber, pickingLocation;
+
+        if (format === 'SAP') {
+            taskId = task.taskId;
+            sequence = task.sequence;
+            taskData = task;
+            packageId = task.packageId || null;
+            serialNumber = task.sku || null;
+            pickingLocation = task.sourceLocation || null;
+        } else if (format === 'ORTEC') {
+            taskId = task.id;
+            sequence = task.sequence;
+            taskData = task;
+            packageId = task.packageId || null;
+            serialNumber = task.serialNumber || null;
+            pickingLocation = task.pickingLocation || null;
+        }
+
+        const taskDataStr = JSON.stringify(taskData);
 
         if (DB_TYPE === 'postgresql') {
             await query(
@@ -45,13 +86,13 @@ async function createWarehouseOrder(ortecData) {
          (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
          VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)`,
                 [
-                    instruction.id,
-                    resourceId,
-                    instruction.sequence,
-                    blockDataStr,
-                    instruction.packageId || null,
-                    instruction.serialNumber || null,
-                    instruction.pickingLocation || null,
+                    taskId,
+                    warehouseOrderId,
+                    sequence,
+                    taskDataStr,
+                    packageId,
+                    serialNumber,
+                    pickingLocation,
                     'PENDING'
                 ]
             );
@@ -61,13 +102,13 @@ async function createWarehouseOrder(ortecData) {
          (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    instruction.id,
-                    resourceId,
-                    instruction.sequence,
-                    blockDataStr,
-                    instruction.packageId || null,
-                    instruction.serialNumber || null,
-                    instruction.pickingLocation || null,
+                    taskId,
+                    warehouseOrderId,
+                    sequence,
+                    taskDataStr,
+                    packageId,
+                    serialNumber,
+                    pickingLocation,
                     'PENDING'
                 ]
             );
@@ -75,8 +116,8 @@ async function createWarehouseOrder(ortecData) {
     }
 
     return {
-        warehouseOrderId: resourceId,
-        tasksCount: loadInstructions.length
+        warehouseOrderId,
+        tasksCount: totalTasks
     };
 }
 

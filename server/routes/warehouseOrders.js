@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const validateOrtecJSON = require('../middleware/validateOrtecJSON');
+const validateWarehouseOrderJSON = require('../middleware/validateWarehouseOrderJSON');
 const {
     createWarehouseOrder,
     getWarehouseOrder,
@@ -14,14 +14,15 @@ const logger = require('../utils/logger');
  * POST /api/warehouse-orders
  * Create a new warehouse order with tasks
  */
-router.post('/', validateOrtecJSON, async (req, res, next) => {
+router.post('/', validateWarehouseOrderJSON, async (req, res, next) => {
     try {
-        const ortecData = req.body;
+        const payload = req.body;
+        const format = req.warehouseOrderFormat; // Attached by middleware
 
-        logger.info('Creating warehouse order:', ortecData.resourceId);
+        logger.info(`Creating warehouse order (${format} format):`, payload.warehouseOrderId || payload.resourceId);
 
         // Create warehouse order and tasks
-        const result = await createWarehouseOrder(ortecData);
+        const result = await createWarehouseOrder(payload, format);
 
         // Get all tasks to generate URLs
         const tasks = await getWarehouseTasks(result.warehouseOrderId);

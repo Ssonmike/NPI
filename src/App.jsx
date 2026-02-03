@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Scene } from './components/Scene';
-import { generateSequence } from './utils/boxLogic';
+import { normalizeWarehouseOrder } from './domain/normalizer';
+import { buildRenderSteps } from './render/stepsBuilder';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Settings, Box as BoxIcon, Info, X } from 'lucide-react';
 import { PALLET_CONFIGURATIONS, getPalletById } from './data/palletConfigurations';
 
@@ -38,10 +39,9 @@ export default function App() {
         setWarehouseOrderId(data.warehouseOrderId);
         setTaskId(data.taskId);
 
-        // Generate boxes from warehouse order data
-        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
-          JSON.stringify(data.warehouseOrder, null, 2)
-        );
+        // Normalize and build render steps
+        const normalized = normalizeWarehouseOrder(data.warehouseOrder);
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = buildRenderSteps(normalized);
 
         setBoxes(generatedBoxes);
         setPallet(parsedPallet);
@@ -73,10 +73,9 @@ export default function App() {
 
         const ortecData = await response.json();
 
-        // Generate boxes
-        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
-          JSON.stringify(ortecData, null, 2)
-        );
+        // Normalize and build render steps
+        const normalized = normalizeWarehouseOrder(ortecData);
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = buildRenderSteps(normalized);
 
         setBoxes(generatedBoxes);
         setPallet(parsedPallet);
@@ -92,13 +91,12 @@ export default function App() {
         setLoading(false);
       } else {
         // No URL params - load default pallet for development
-        console.log('No URL params, loading default pallet');
-        const defaultData = PALLET_CONFIGURATIONS.pallet1.data;
+        console.log('No URL params, loading SAP example pallet');
+        const defaultData = PALLET_CONFIGURATIONS.sapExample.data;
         setJsonInput(JSON.stringify(defaultData, null, 2));
 
-        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(
-          JSON.stringify(defaultData, null, 2)
-        );
+        const normalized = normalizeWarehouseOrder(defaultData);
+        const { boxes: generatedBoxes, pallet: parsedPallet, resource } = buildRenderSteps(normalized);
 
         setBoxes(generatedBoxes);
         setPallet(parsedPallet);
@@ -156,7 +154,8 @@ export default function App() {
 
   const handleParse = useCallback(() => {
     try {
-      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = generateSequence(jsonInput);
+      const normalized = normalizeWarehouseOrder(jsonInput);
+      const { boxes: generatedBoxes, pallet: parsedPallet, resource } = buildRenderSteps(normalized);
       setBoxes(generatedBoxes);
       setPallet(parsedPallet);
       setResourceInfo(resource);
@@ -325,7 +324,7 @@ export default function App() {
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <div className="text-[10px] md:text-xs text-orange-400 uppercase tracking-widest font-bold">
-                    Block {currentStep} of {totalBlocks}
+                    Task {currentStep} of {totalBlocks}
                   </div>
                   {/* Mobile Coordinates (Compact) */}
                   <div className="flex gap-2 md:hidden">
