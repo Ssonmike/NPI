@@ -332,9 +332,9 @@ export const PALLET_CONFIGURATIONS = {
             "warehouseOrderId": "PAL_XYZ_EXAMPLE_001",
             "uom": "mm",
             "pallet": {
-                "typePallet": "LFD Pallet",
-                "length": 2150,
-                "width": 1100,
+                "typePallet": "Block Pallet",
+                "length": 1200,
+                "width": 1000,
                 "height": 130,
                 "maxHeight": 2300
             },
