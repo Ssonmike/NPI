@@ -38,9 +38,11 @@ CREATE TABLE warehouse_tasks (
   package_id TEXT,
   serial_number TEXT,
   picking_location TEXT,
-  status TEXT DEFAULT 'PENDING',
-  started_at TEXT,
-  completed_at TEXT,
+  status TEXT DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED')),
+  started_at TEXT,                      -- ISO 8601 timestamp
+  completed_at TEXT,                    -- ISO 8601 timestamp
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
   
   FOREIGN KEY (warehouse_order_id) 
     REFERENCES warehouse_orders(id) 

@@ -36,6 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 app.use('/api/warehouse-orders', warehouseOrdersRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/warehouse-tasks', tasksRoutes); // Alias for React Admin
 app.use('/api/health', healthRoutes);
 app.use('/api/block-builder', blockBuilderRoutes);
 app.use('/api/dashboard', dashboardRoutes);

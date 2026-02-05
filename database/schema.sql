@@ -40,6 +40,8 @@ CREATE TABLE warehouse_tasks (
   status VARCHAR(20) DEFAULT 'PENDING',     -- 'PENDING', 'IN_PROGRESS', 'COMPLETED'
   started_at TIMESTAMP,
   completed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
   
   -- Foreign key constraint
   CONSTRAINT fk_warehouse_order 
@@ -52,6 +54,7 @@ CREATE TABLE warehouse_tasks (
 CREATE INDEX idx_task_warehouse_order ON warehouse_tasks(warehouse_order_id);
 CREATE INDEX idx_task_wo_sequence ON warehouse_tasks(warehouse_order_id, sequence);
 CREATE INDEX idx_task_status ON warehouse_tasks(status);
+CREATE INDEX idx_task_created_at ON warehouse_tasks(created_at);
 
 -- ============================================
 -- Table: active_sessions (Optional - for tracking AMRs)

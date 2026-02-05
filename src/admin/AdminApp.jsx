@@ -64,7 +64,7 @@ export default function AdminApp() {
                 icon={Package}
             />
             <Resource
-                name="tasks"
+                name="warehouse-tasks"
                 list={WarehouseTaskList}
                 show={WarehouseTaskShow}
                 icon={ListChecks}
