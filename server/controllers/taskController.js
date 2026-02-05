@@ -1,4 +1,5 @@
 const { query, queryOne, DB_TYPE } = require('../config/database');
+const logger = require('../utils/logger');
 
 /**
  * Get task by ID
@@ -209,10 +210,129 @@ async function failTask(taskId) {
     };
 }
 
+/**
+ * Get all tasks with pagination
+ */
+async function getAllTasks(params = {}) {
+    const {
+        page = 1,
+        perPage = 10,
+        sort = 'created_at',
+        order = 'DESC',
+        status,
+        warehouseOrderId
+    } = params;
+
+    const offset = (page - 1) * perPage;
+
+    try {
+        let query = 'SELECT * FROM warehouse_tasks';
+        let countQuery = 'SELECT COUNT(*) as total FROM warehouse_tasks';
+        const queryParams = [];
+        const conditions = [];
+
+        if (status) {
+            conditions.push('status = ?');
+            queryParams.push(status);
+        }
+
+        if (warehouseOrderId) {
+            conditions.push('warehouse_order_id = ?');
+            queryParams.push(warehouseOrderId);
+        }
+
+        if (conditions.length > 0) {
+            const whereClause = ' WHERE ' + conditions.join(' AND ');
+            query += whereClause;
+            countQuery += whereClause;
+        }
+
+        query += ` ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
+        queryParams.push(perPage, offset);
+
+        const db = getDatabase();
+        const tasks = await new Promise((resolve, reject) => {
+            db.all(query, queryParams, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        const countParams = queryParams.slice(0, queryParams.length - 2);
+        const totalResult = await new Promise((resolve, reject) => {
+            db.get(countQuery, countParams, (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        return {
+            data: tasks.map(task => ({
+                id: task.id,
+                taskId: task.id,
+                warehouse_order_id: task.warehouse_order_id,
+                sequence: task.sequence,
+                status: task.status,
+                picking_location: task.picking_location,
+                serial_number: task.serial_number,
+                task_url: task.task_url,
+                block_data: JSON.parse(task.block_data),
+                completed_at: task.completed_at,
+                created_at: task.created_at,
+                updated_at: task.updated_at
+            })),
+            total: totalResult.total
+        };
+    } catch (err) {
+        logger.error('Error getting all tasks:', err);
+        throw err;
+    }
+}
+
+/**
+ * Get single task
+ */
+async function getTask(taskId) {
+    try {
+        const db = getDatabase();
+        const task = await new Promise((resolve, reject) => {
+            db.get(
+                'SELECT * FROM warehouse_tasks WHERE id = ?',
+                [taskId],
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                }
+            );
+        });
+
+        if (!task) return null;
+
+        return {
+            id: task.id,
+            taskId: task.id,
+            warehouse_order_id: task.warehouse_order_id,
+            sequence: task.sequence,
+            status: task.status,
+            picking_location: task.picking_location,
+            serial_number: task.serial_number,
+            task_url: task.task_url,
+            block_data: JSON.parse(task.block_data),
+            completed_at: task.completed_at,
+            created_at: task.created_at,
+            updated_at: task.updated_at
+        };
+    } catch (err) {
+        logger.error('Error getting task:', err);
+        throw err;
+    }
+}
+
 module.exports = {
     getTask,
     completeTask,
     startTask,
     listTasks,
-    failTask
+    failTask,
+    getAllTasks
 };

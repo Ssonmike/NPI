@@ -1,38 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const validateWarehouseOrderJSON = require('../middleware/validateWarehouseOrderJSON');
 const {
     createWarehouseOrder,
     getWarehouseOrder,
-    getWarehouseTasks,
-    getTaskBySequence,
-    listWarehouseOrders,
-    retryWarehouseOrder
+    getAllWarehouseOrders, // NUEVO
+    getWarehouseTasks
 } = require('../controllers/warehouseOrderController');
-const { generateTaskUrls } = require('../utils/urlGenerator');
+const validateOrtecJSON = require('../middleware/validateOrtecJSON');
 const logger = require('../utils/logger');
 
 /**
  * GET /api/warehouse-orders
- * List all warehouse orders with filters and pagination
+ * List all warehouse orders (for React Admin)
  */
 router.get('/', async (req, res, next) => {
     try {
-        const filters = {
-            status: req.query.status,
-            _start: parseInt(req.query._start || 0),
-            _end: parseInt(req.query._end || 25),
-        };
+        logger.info('Listing all warehouse orders');
 
-        logger.info('Listing warehouse orders with filters:', filters);
+        const page = parseInt(req.query._page) || 1;
+        const perPage = parseInt(req.query._perPage) || 10;
+        const sort = req.query._sort || 'created_at';
+        const order = req.query._order || 'DESC';
+        const status = req.query.status;
 
-        const { orders, total } = await listWarehouseOrders(filters);
+        const result = await getAllWarehouseOrders({
+            page,
+            perPage,
+            sort,
+            order,
+            status
+        });
 
-        // Set total count header for React Admin
-        res.set('X-Total-Count', total);
-        res.set('Access-Control-Expose-Headers', 'X-Total-Count');
+        res.set('Content-Range', `warehouse-orders ${(page - 1) * perPage}-${page * perPage}/${result.total}`);
+        res.set('Access-Control-Expose-Headers', 'Content-Range');
 
-        res.json(orders);
+        res.json(result.data);
     } catch (err) {
         next(err);
     }
@@ -40,30 +42,12 @@ router.get('/', async (req, res, next) => {
 
 /**
  * POST /api/warehouse-orders
- * Create a new warehouse order with tasks
  */
-router.post('/', validateWarehouseOrderJSON, async (req, res, next) => {
+router.post('/', validateOrtecJSON, async (req, res, next) => {
     try {
-        const payload = req.body;
-        const format = req.warehouseOrderFormat; // Attached by middleware
-
-        logger.info(`Creating warehouse order (${format} format):`, payload.warehouseOrderId || payload.resourceId);
-
-        // Create warehouse order and tasks
-        const result = await createWarehouseOrder(payload, format);
-
-        // Get all tasks to generate URLs
-        const tasks = await getWarehouseTasks(result.warehouseOrderId);
-        const urls = generateTaskUrls(result.warehouseOrderId, tasks);
-
-        logger.info(`Warehouse order created: ${result.warehouseOrderId} with ${result.tasksCount} tasks`);
-
-        res.status(201).json({
-            success: true,
-            warehouseOrderId: result.warehouseOrderId,
-            tasksCount: result.tasksCount,
-            urls
-        });
+        logger.info('Creating warehouse order');
+        const result = await createWarehouseOrder(req.body);
+        res.status(201).json(result);
     } catch (err) {
         next(err);
     }
@@ -71,79 +55,27 @@ router.post('/', validateWarehouseOrderJSON, async (req, res, next) => {
 
 /**
  * GET /api/warehouse-orders/:id
- * Get warehouse order by ID
  */
 router.get('/:id', async (req, res, next) => {
     try {
-        const { id } = req.params;
-
-        const warehouseOrder = await getWarehouseOrder(id);
-
+        const warehouseOrder = await getWarehouseOrder(req.params.id);
         if (!warehouseOrder) {
-            return res.status(404).json({
-                success: false,
-                error: 'Warehouse order not found'
-            });
+            return res.status(404).json({ error: 'NOT_FOUND' });
         }
-
-        res.json(warehouseOrder.ortec_data);
+        res.json(warehouseOrder);
     } catch (err) {
         next(err);
     }
 });
 
 /**
- * GET /api/warehouse-orders/:id/tasks/:sequence
- * Get task by warehouse order ID and sequence number
+ * GET /api/warehouse-orders/:id/tasks
  */
-router.get('/:id/tasks/:sequence', async (req, res, next) => {
+router.get('/:id/tasks', async (req, res, next) => {
     try {
-        const { id, sequence } = req.params;
-
-        const task = await getTaskBySequence(id, parseInt(sequence));
-
-        if (!task) {
-            return res.status(404).json({
-                success: false,
-                error: 'Task not found'
-            });
-        }
-
-        res.json({
-            id: task.id,
-            sequence: task.sequence,
-            block_data: task.block_data,
-            status: task.status,
-            url: `/${id}/task/${task.id}`
-        });
+        const tasks = await getWarehouseTasks(req.params.id);
+        res.json(tasks);
     } catch (err) {
-        next(err);
-    }
-});
-
-/**
- * POST /api/warehouse-orders/:id/retry
- * Retry a failed warehouse order
- */
-router.post('/:id/retry', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-
-        logger.info('Retrying warehouse order:', id);
-
-        const result = await retryWarehouseOrder(id);
-
-        res.json({
-            success: true,
-            ...result
-        });
-    } catch (err) {
-        if (err.message === 'Warehouse order not found') {
-            return res.status(404).json({
-                success: false,
-                error: 'Warehouse order not found'
-            });
-        }
         next(err);
     }
 });

@@ -1,4 +1,5 @@
 const { query, queryOne, DB_TYPE } = require('../config/database');
+const logger = require('../utils/logger');
 
 /**
  * Create a new warehouse order with tasks
@@ -350,6 +351,76 @@ async function retryWarehouseOrder(warehouseOrderId) {
     };
 }
 
+/**
+ * Get all warehouse orders with pagination
+ */
+async function getAllWarehouseOrders(params = {}) {
+    const {
+        page = 1,
+        perPage = 10,
+        sort = 'created_at',
+        order = 'DESC',
+        status
+    } = params;
+
+    const offset = (page - 1) * perPage;
+
+    try {
+        let query = 'SELECT * FROM warehouse_orders';
+        let countQuery = 'SELECT COUNT(*) as total FROM warehouse_orders';
+        const queryParams = [];
+        const conditions = [];
+
+        if (status) {
+            conditions.push('status = ?');
+            queryParams.push(status);
+        }
+
+        if (conditions.length > 0) {
+            const whereClause = ' WHERE ' + conditions.join(' AND ');
+            query += whereClause;
+            countQuery += whereClause;
+        }
+
+        query += ` ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
+        queryParams.push(perPage, offset);
+
+        const db = getDatabase();
+        const orders = await new Promise((resolve, reject) => {
+            db.all(query, queryParams, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        const countParams = status ? [status] : [];
+        const totalResult = await new Promise((resolve, reject) => {
+            db.get(countQuery, countParams, (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        return {
+            data: orders.map(order => ({
+                id: order.id,
+                warehouseOrderId: order.id,
+                status: order.status,
+                total_tasks: order.total_tasks,
+                completed_tasks: order.completed_tasks,
+                failed_tasks: order.failed_tasks,
+                created_at: order.created_at,
+                updated_at: order.updated_at,
+                ortec_data: JSON.parse(order.ortec_data)
+            })),
+            total: totalResult.total
+        };
+    } catch (err) {
+        logger.error('Error getting all warehouse orders:', err);
+        throw err;
+    }
+}
+
 module.exports = {
     createWarehouseOrder,
     getWarehouseOrder,
@@ -357,5 +428,6 @@ module.exports = {
     getTaskBySequence,
     getActiveWarehouseOrdersCount,
     listWarehouseOrders,
-    retryWarehouseOrder
+    retryWarehouseOrder,
+    getAllWarehouseOrders
 };

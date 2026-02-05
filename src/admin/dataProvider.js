@@ -17,12 +17,12 @@ const dataProvider = {
         const { field, order } = params.sort;
         const filters = params.filter;
 
-        // Build query string
+        // Build query string with correct parameter names
         const query = {
             _sort: field,
             _order: order,
-            _start: (page - 1) * perPage,
-            _end: page * perPage,
+            _page: page,
+            _perPage: perPage,
             ...filters,
         };
 
@@ -38,13 +38,12 @@ const dataProvider = {
 
         const json = await response.json();
 
-        // Transform response to React Admin format
-        // Handle both {data, total} and {items, count} formats
-        const data = json.data || json.items || json;
-        const total = json.total || json.count || data.length;
+        // Get total from Content-Range header
+        const contentRange = response.headers.get('Content-Range');
+        const total = contentRange ? parseInt(contentRange.split('/').pop(), 10) : json.length;
 
         // Map IDs for React Admin
-        const mappedData = data.map(item => mapIdsToReactAdmin(resource, item));
+        const mappedData = json.map(item => mapIdsToReactAdmin(resource, item));
 
         return {
             data: mappedData,
