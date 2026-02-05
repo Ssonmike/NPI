@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.viewer.js",
-    "dev:viewer": "vite --config vite.config.viewer.js",
-    "dev:admin": "vite --config vite.config.admin.js",
+    "dev": "vite --config vite.config.viewer.js --force",
+    "dev:viewer": "vite --config vite.config.viewer.js --force",
+    "dev:admin": "vite --config vite.config.admin.js --force",
     "dev:all": "concurrently \"npm run dev:viewer\" \"npm run dev:admin\" \"npm run server\"",
     "build": "vite build --config vite.config.viewer.js && vite build --config vite.config.admin.js",
     "build:viewer": "vite build --config vite.config.viewer.js",
