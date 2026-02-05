@@ -3,10 +3,12 @@ const router = express.Router();
 const {
     createWarehouseOrder,
     getWarehouseOrder,
-    getAllWarehouseOrders, // NUEVO
-    getWarehouseTasks
+    getAllWarehouseOrders,
+    getWarehouseTasks,
+    deleteWarehouseOrder,
+    deleteManyWarehouseOrders
 } = require('../controllers/warehouseOrderController');
-const validateOrtecJSON = require('../middleware/validateOrtecJSON');
+const validateWarehouseOrder = require('../middleware/validateOrtecJSON');
 const logger = require('../utils/logger');
 
 /**
@@ -42,8 +44,9 @@ router.get('/', async (req, res, next) => {
 
 /**
  * POST /api/warehouse-orders
+ * Accepts both SAP and ORTEC formats
  */
-router.post('/', validateOrtecJSON, async (req, res, next) => {
+router.post('/', validateWarehouseOrder, async (req, res, next) => {
     try {
         logger.info('Creating warehouse order');
         const result = await createWarehouseOrder(req.body);
@@ -75,6 +78,40 @@ router.get('/:id/tasks', async (req, res, next) => {
     try {
         const tasks = await getWarehouseTasks(req.params.id);
         res.json(tasks);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * DELETE /api/warehouse-orders/:id
+ * Delete a single warehouse order
+ */
+router.delete('/:id', async (req, res, next) => {
+    try {
+        logger.info('Deleting warehouse order:', req.params.id);
+        const result = await deleteWarehouseOrder(req.params.id);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * DELETE /api/warehouse-orders
+ * Delete multiple warehouse orders (bulk delete)
+ */
+router.delete('/', async (req, res, next) => {
+    try {
+        const ids = req.query.ids ? req.query.ids.split(',') : [];
+
+        if (ids.length === 0) {
+            return res.status(400).json({ error: 'No IDs provided' });
+        }
+
+        logger.info('Bulk deleting warehouse orders:', ids);
+        const result = await deleteManyWarehouseOrders(ids);
+        res.json(result);
     } catch (err) {
         next(err);
     }

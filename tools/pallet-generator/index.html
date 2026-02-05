@@ -557,7 +557,8 @@
 
             const primaryFootprint = footprints[taskIndex % footprints.length];
 
-            const taskId = `WT_${String(taskIndex).padStart(6, '0')}`;
+            // Generate unique taskId using UUID instead of sequential number
+            const taskId = `WT_${generateUUID().substring(0, 8).toUpperCase()}`;
             const packageId = generateUUID();
             const sku = generateRandomSKU();
             const sourceLocation = generatePickingLocation(taskIndex, config);

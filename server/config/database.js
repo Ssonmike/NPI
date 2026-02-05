@@ -60,6 +60,28 @@ async function initDatabase() {
                 console.log('✓ SQLite schema initialized');
             }
         }
+
+        // Run migrations: Add task_url column if it doesn't exist
+        try {
+            const tableInfo = db.prepare("PRAGMA table_info(warehouse_tasks)").all();
+            const hasTaskUrl = tableInfo.some(col => col.name === 'task_url');
+
+            if (!hasTaskUrl) {
+                console.log('Running migration: Adding task_url column...');
+                db.prepare('ALTER TABLE warehouse_tasks ADD COLUMN task_url TEXT').run();
+
+                // Update existing rows
+                const updateStmt = db.prepare(`
+                    UPDATE warehouse_tasks 
+                    SET task_url = 'http://localhost:5173/' || warehouse_order_id || '/task/' || id
+                    WHERE task_url IS NULL
+                `);
+                const result = updateStmt.run();
+                console.log(`✓ Migration complete: Added task_url column and updated ${result.changes} rows`);
+            }
+        } catch (migrationError) {
+            console.error('Migration warning:', migrationError.message);
+        }
     }
 
     return db;

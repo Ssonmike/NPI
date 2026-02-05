@@ -50,16 +50,11 @@ app.get('/tools/pallet-generator', (req, res) => {
     }
 });
 
-// Serve static files from React build
-const distPath = path.join(__dirname, '../dist');
-if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    logger.info('Serving static files from:', distPath);
-}
-
 /**
  * Dynamic route: /:warehouseOrderId/task/:taskId
  * Serves React app with embedded data
+ * This route is for the 3D viewer served by Vite on port 5173
+ * Express just provides the API endpoints
  */
 app.get('/:warehouseOrderId/task/:taskId', async (req, res, next) => {
     try {
@@ -70,16 +65,11 @@ app.get('/:warehouseOrderId/task/:taskId', async (req, res, next) => {
         // Get warehouse order
         const warehouseOrder = await getWarehouseOrder(warehouseOrderId);
         if (!warehouseOrder) {
-            return res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>404 - Not Found</title></head>
-          <body>
-            <h1>Warehouse Order Not Found</h1>
-            <p>Warehouse Order ID: ${warehouseOrderId}</p>
-          </body>
-        </html>
-      `);
+            return res.status(404).json({
+                success: false,
+                error: 'Warehouse order not found',
+                warehouseOrderId
+            });
         }
 
         // Get all tasks
@@ -88,16 +78,11 @@ app.get('/:warehouseOrderId/task/:taskId', async (req, res, next) => {
         // Find current task
         const currentTask = tasks.find(t => t.id === taskId);
         if (!currentTask) {
-            return res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>404 - Not Found</title></head>
-          <body>
-            <h1>Task Not Found</h1>
-            <p>Task ID: ${taskId}</p>
-          </body>
-        </html>
-      `);
+            return res.status(404).json({
+                success: false,
+                error: 'Task not found',
+                taskId
+            });
         }
 
         // Mark task as in progress if pending
@@ -195,15 +180,10 @@ app.get('/:warehouseOrderId/task/:taskId', async (req, res, next) => {
     }
 });
 
-// Fallback: serve index.html for any other route (SPA support)
-app.get('*', (req, res) => {
-    const indexPath = path.join(distPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Application not built. Run "npm run build" first.');
-    }
-});
+// API-only server - frontends are served by Vite dev servers
+// Admin Panel: http://localhost:3001 (Vite)
+// 3D Viewer: http://localhost:5173 (Vite)
+// Backend API: http://localhost:3000 (Express)
 
 // Error handler (must be last)
 app.use(errorHandler);

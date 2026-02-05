@@ -73,21 +73,35 @@ export default function PVViewer() {
                     throw new Error('Warehouse order not found');
                 }
 
-                const ortecData = await response.json();
+                const apiResponse = await response.json();
+
+                // Extract the actual warehouse order data from the API response
+                // API returns: { id, ortec_data, status, ... }
+                // We need just the ortec_data field
+                const warehouseOrderData = apiResponse.ortec_data || apiResponse;
 
                 // Normalize and build render steps
-                const normalized = normalizeWarehouseOrder(ortecData);
+                const normalized = normalizeWarehouseOrder(warehouseOrderData);
                 const { boxes: generatedBoxes, pallet: parsedPallet, resource } = buildRenderSteps(normalized);
 
                 setBoxes(generatedBoxes);
                 setPallet(parsedPallet);
                 setResourceInfo(resource);
-                setJsonInput(JSON.stringify(ortecData, null, 2));
+                setJsonInput(JSON.stringify(warehouseOrderData, null, 2));
 
                 // Find current task sequence
-                const currentTask = ortecData.loadInstructions.find(t => t.id === urlTaskId);
-                if (currentTask) {
-                    setCurrentStep(currentTask.sequence);
+                // For SAP format, search in tasks array
+                if (warehouseOrderData.tasks) {
+                    const currentTask = warehouseOrderData.tasks.find(t => t.taskId === urlTaskId);
+                    if (currentTask) {
+                        setCurrentStep(currentTask.sequence);
+                    }
+                } else if (warehouseOrderData.loadInstructions) {
+                    // For ORTEC format, search in loadInstructions
+                    const currentTask = warehouseOrderData.loadInstructions.find(t => t.id === urlTaskId);
+                    if (currentTask) {
+                        setCurrentStep(currentTask.sequence);
+                    }
                 }
 
                 setLoading(false);

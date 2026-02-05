@@ -23,8 +23,8 @@ async function createWarehouseOrder(payload, format = null) {
     if (format === 'SAP') {
         warehouseOrderId = payload.warehouseOrderId;
         tasks = payload.tasks;
-        // For SAP, totalTasks is the total number of boxes (since each box becomes a warehouse_task)
-        totalTasks = tasks.reduce((sum, task) => sum + (task.boxes ? task.boxes.length : 0), 0);
+        // For SAP, totalTasks is the number of tasks (not boxes)
+        totalTasks = tasks.length;
     } else if (format === 'ORTEC') {
         warehouseOrderId = payload.resourceId;
         tasks = payload.loadInstructions;
@@ -63,74 +63,72 @@ async function createWarehouseOrder(payload, format = null) {
     // Insert tasks based on format
     if (format === 'SAP') {
         // SAP format: Each task contains multiple boxes
-        // We need to create one warehouse_task row per box
+        // Create ONE warehouse_task row per task (not per box)
         for (const task of tasks) {
             const { taskId, sequence, sku, packageId, sourceLocation, boxes } = task;
 
-            // Insert each box as a separate warehouse_task
-            for (let boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
-                const box = boxes[boxIndex];
-
-                // Create block_data in ORTEC-compatible format for visualization
-                const blockData = {
-                    id: box.boxId,
-                    serialNumber: sku,
-                    pickingLocation: sourceLocation,
+            // Store all boxes in block_data as an array
+            const blockData = {
+                taskId: taskId,
+                serialNumber: sku,
+                pickingLocation: sourceLocation,
+                packageId: packageId,
+                sequence: sequence,
+                boxes: boxes.map((box, index) => ({
+                    boxId: box.boxId,
                     x1: box.x1,
                     x2: box.x2,
                     y1: box.y1,
                     y2: box.y2,
                     z1: box.z1,
                     z2: box.z2,
-                    quantityX: 1,
-                    quantityY: 1,
-                    quantityZ: 1,
-                    sizeUom: "mm",
-                    orientation: "LxW",
-                    blockType: "Cube",
-                    packageId: packageId,
-                    sequence: sequence,
-                    // Keep original task info for reference
-                    _taskId: taskId,
-                    _boxIndex: boxIndex + 1,
-                    _totalBoxes: boxes.length
-                };
+                    boxIndex: index + 1,
+                    totalBoxes: boxes.length
+                })),
+                // Metadata
+                sizeUom: "mm",
+                totalBoxes: boxes.length
+            };
 
-                const blockDataStr = JSON.stringify(blockData);
+            const blockDataStr = JSON.stringify(blockData);
 
-                if (DB_TYPE === 'postgresql') {
-                    await query(
-                        `INSERT INTO warehouse_tasks 
-                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
-                 VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)`,
-                        [
-                            box.boxId,
-                            warehouseOrderId,
-                            sequence,
-                            blockDataStr,
-                            packageId,
-                            sku,
-                            sourceLocation,
-                            'PENDING'
-                        ]
-                    );
-                } else {
-                    await query(
-                        `INSERT INTO warehouse_tasks 
-                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [
-                            box.boxId,
-                            warehouseOrderId,
-                            sequence,
-                            blockDataStr,
-                            packageId,
-                            sku,
-                            sourceLocation,
-                            'PENDING'
-                        ]
-                    );
-                }
+            // Generate task URL
+            const taskUrl = `http://localhost:5173/${warehouseOrderId}/task/${taskId}`;
+
+            if (DB_TYPE === 'postgresql') {
+                await query(
+                    `INSERT INTO warehouse_tasks 
+                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, task_url, status)
+                 VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9)`,
+                    [
+                        taskId,
+                        warehouseOrderId,
+                        sequence,
+                        blockDataStr,
+                        packageId,
+                        sku,
+                        sourceLocation,
+                        taskUrl,
+                        'PENDING'
+                    ]
+                );
+            } else {
+                await query(
+                    `INSERT INTO warehouse_tasks 
+                 (id, warehouse_order_id, sequence, block_data, package_id, serial_number, picking_location, task_url, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        taskId,
+                        warehouseOrderId,
+                        sequence,
+                        blockDataStr,
+                        packageId,
+                        sku,
+                        sourceLocation,
+                        taskUrl,
+                        'PENDING'
+                    ]
+                );
             }
         }
     } else if (format === 'ORTEC') {
@@ -181,9 +179,36 @@ async function createWarehouseOrder(payload, format = null) {
         }
     }
 
+    // Generate task URLs for the response
+    const taskUrls = [];
+
+    if (format === 'SAP') {
+        // For SAP format, generate URLs for each task (not each box)
+        for (const task of tasks) {
+            const taskUrl = `http://localhost:5173/${warehouseOrderId}/task/${task.taskId}`;
+            taskUrls.push({
+                taskId: task.taskId,
+                sequence: task.sequence,
+                url: taskUrl
+            });
+        }
+    } else if (format === 'ORTEC') {
+        // For ORTEC format, generate URLs for each loadInstruction
+        for (const task of tasks) {
+            const taskUrl = `http://localhost:5173/${warehouseOrderId}/task/${task.id}`;
+            taskUrls.push({
+                taskId: task.id,
+                sequence: task.sequence,
+                url: taskUrl
+            });
+        }
+    }
+
     return {
+        success: true,
         warehouseOrderId,
-        tasksCount: totalTasks
+        tasksCount: totalTasks,
+        urls: taskUrls
     };
 }
 
@@ -366,40 +391,41 @@ async function getAllWarehouseOrders(params = {}) {
     const offset = (page - 1) * perPage;
 
     try {
-        let query = 'SELECT * FROM warehouse_orders';
+        let queryStr = 'SELECT * FROM warehouse_orders';
         let countQuery = 'SELECT COUNT(*) as total FROM warehouse_orders';
         const queryParams = [];
         const conditions = [];
+        let paramIndex = 1;
 
         if (status) {
-            conditions.push('status = ?');
+            conditions.push(`status = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
             queryParams.push(status);
+            paramIndex++;
         }
 
         if (conditions.length > 0) {
             const whereClause = ' WHERE ' + conditions.join(' AND ');
-            query += whereClause;
+            queryStr += whereClause;
             countQuery += whereClause;
         }
 
-        query += ` ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
+        queryStr += ` ORDER BY ${sort} ${order}`;
+
+        if (DB_TYPE === 'postgresql') {
+            queryStr += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        } else {
+            queryStr += ` LIMIT ? OFFSET ?`;
+        }
+
         queryParams.push(perPage, offset);
 
-        const db = getDatabase();
-        const orders = await new Promise((resolve, reject) => {
-            db.all(query, queryParams, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+        // Get orders using the query function from database module
+        const result = await query(queryStr, queryParams);
+        const orders = result.rows;
 
+        // Get count
         const countParams = status ? [status] : [];
-        const totalResult = await new Promise((resolve, reject) => {
-            db.get(countQuery, countParams, (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+        const totalResult = await queryOne(countQuery, countParams);
 
         return {
             data: orders.map(order => ({
@@ -411,14 +437,54 @@ async function getAllWarehouseOrders(params = {}) {
                 failed_tasks: order.failed_tasks,
                 created_at: order.created_at,
                 updated_at: order.updated_at,
-                ortec_data: JSON.parse(order.ortec_data)
+                ortec_data: typeof order.ortec_data === 'string' ? JSON.parse(order.ortec_data) : order.ortec_data
             })),
-            total: totalResult.total
+            total: parseInt(totalResult.total || 0)
         };
     } catch (err) {
         logger.error('Error getting all warehouse orders:', err);
         throw err;
     }
+}
+
+/**
+ * Delete a warehouse order by ID
+ */
+async function deleteWarehouseOrder(warehouseOrderId) {
+    // Tasks will be deleted automatically due to CASCADE foreign key
+    const result = await query(
+        `DELETE FROM warehouse_orders WHERE id = ${DB_TYPE === 'postgresql' ? '$1' : '?'}`,
+        [warehouseOrderId]
+    );
+
+    return {
+        success: true,
+        deletedId: warehouseOrderId
+    };
+}
+
+/**
+ * Delete multiple warehouse orders by IDs
+ */
+async function deleteManyWarehouseOrders(orderIds) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        throw new Error('orderIds must be a non-empty array');
+    }
+
+    // Build placeholders for IN clause
+    const placeholders = orderIds.map((_, index) =>
+        DB_TYPE === 'postgresql' ? `$${index + 1}` : '?'
+    ).join(', ');
+
+    const result = await query(
+        `DELETE FROM warehouse_orders WHERE id IN (${placeholders})`,
+        orderIds
+    );
+
+    return {
+        success: true,
+        deletedCount: result.rowCount || result.changes || orderIds.length
+    };
 }
 
 module.exports = {
@@ -429,5 +495,7 @@ module.exports = {
     getActiveWarehouseOrdersCount,
     listWarehouseOrders,
     retryWarehouseOrder,
-    getAllWarehouseOrders
+    getAllWarehouseOrders,
+    deleteWarehouseOrder,
+    deleteManyWarehouseOrders
 };

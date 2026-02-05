@@ -3,7 +3,9 @@ const router = express.Router();
 const {
     completeTask,
     getAllTasks,
-    getTask
+    getTask,
+    deleteTask,
+    deleteManyTasks
 } = require('../controllers/taskController');
 const logger = require('../utils/logger');
 
@@ -58,6 +60,40 @@ router.get('/:id', async (req, res, next) => {
 router.post('/:taskId/complete', async (req, res, next) => {
     try {
         const result = await completeTask(req.params.taskId);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * DELETE /api/tasks/:id
+ * Delete a single task
+ */
+router.delete('/:id', async (req, res, next) => {
+    try {
+        logger.info('Deleting task:', req.params.id);
+        const result = await deleteTask(req.params.id);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * DELETE /api/tasks
+ * Delete multiple tasks (bulk delete)
+ */
+router.delete('/', async (req, res, next) => {
+    try {
+        const ids = req.query.ids ? req.query.ids.split(',') : [];
+
+        if (ids.length === 0) {
+            return res.status(400).json({ error: 'No IDs provided' });
+        }
+
+        logger.info('Bulk deleting tasks:', ids);
+        const result = await deleteManyTasks(ids);
         res.json(result);
     } catch (err) {
         next(err);

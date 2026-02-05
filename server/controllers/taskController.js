@@ -226,45 +226,47 @@ async function getAllTasks(params = {}) {
     const offset = (page - 1) * perPage;
 
     try {
-        let query = 'SELECT * FROM warehouse_tasks';
+        let queryStr = 'SELECT * FROM warehouse_tasks';
         let countQuery = 'SELECT COUNT(*) as total FROM warehouse_tasks';
         const queryParams = [];
         const conditions = [];
+        let paramIndex = 1;
 
         if (status) {
-            conditions.push('status = ?');
+            conditions.push(`status = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
             queryParams.push(status);
+            paramIndex++;
         }
 
         if (warehouseOrderId) {
-            conditions.push('warehouse_order_id = ?');
+            conditions.push(`warehouse_order_id = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
             queryParams.push(warehouseOrderId);
+            paramIndex++;
         }
 
         if (conditions.length > 0) {
             const whereClause = ' WHERE ' + conditions.join(' AND ');
-            query += whereClause;
+            queryStr += whereClause;
             countQuery += whereClause;
         }
 
-        query += ` ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
+        queryStr += ` ORDER BY ${sort} ${order}`;
+
+        if (DB_TYPE === 'postgresql') {
+            queryStr += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        } else {
+            queryStr += ` LIMIT ? OFFSET ?`;
+        }
+
         queryParams.push(perPage, offset);
 
-        const db = getDatabase();
-        const tasks = await new Promise((resolve, reject) => {
-            db.all(query, queryParams, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+        // Get tasks using the query function from database module
+        const result = await query(queryStr, queryParams);
+        const tasks = result.rows;
 
+        // Get count
         const countParams = queryParams.slice(0, queryParams.length - 2);
-        const totalResult = await new Promise((resolve, reject) => {
-            db.get(countQuery, countParams, (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+        const totalResult = await queryOne(countQuery, countParams);
 
         return {
             data: tasks.map(task => ({
@@ -276,12 +278,12 @@ async function getAllTasks(params = {}) {
                 picking_location: task.picking_location,
                 serial_number: task.serial_number,
                 task_url: task.task_url,
-                block_data: JSON.parse(task.block_data),
+                block_data: typeof task.block_data === 'string' ? JSON.parse(task.block_data) : task.block_data,
                 completed_at: task.completed_at,
                 created_at: task.created_at,
                 updated_at: task.updated_at
             })),
-            total: totalResult.total
+            total: parseInt(totalResult.total || 0)
         };
     } catch (err) {
         logger.error('Error getting all tasks:', err);
@@ -290,42 +292,42 @@ async function getAllTasks(params = {}) {
 }
 
 /**
- * Get single task
+ * Delete a task by ID
  */
-async function getTask(taskId) {
-    try {
-        const db = getDatabase();
-        const task = await new Promise((resolve, reject) => {
-            db.get(
-                'SELECT * FROM warehouse_tasks WHERE id = ?',
-                [taskId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+async function deleteTask(taskId) {
+    const result = await query(
+        `DELETE FROM warehouse_tasks WHERE id = ${DB_TYPE === 'postgresql' ? '$1' : '?'}`,
+        [taskId]
+    );
 
-        if (!task) return null;
+    return {
+        success: true,
+        deletedId: taskId
+    };
+}
 
-        return {
-            id: task.id,
-            taskId: task.id,
-            warehouse_order_id: task.warehouse_order_id,
-            sequence: task.sequence,
-            status: task.status,
-            picking_location: task.picking_location,
-            serial_number: task.serial_number,
-            task_url: task.task_url,
-            block_data: JSON.parse(task.block_data),
-            completed_at: task.completed_at,
-            created_at: task.created_at,
-            updated_at: task.updated_at
-        };
-    } catch (err) {
-        logger.error('Error getting task:', err);
-        throw err;
+/**
+ * Delete multiple tasks by IDs
+ */
+async function deleteManyTasks(taskIds) {
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+        throw new Error('taskIds must be a non-empty array');
     }
+
+    // Build placeholders for IN clause
+    const placeholders = taskIds.map((_, index) =>
+        DB_TYPE === 'postgresql' ? `$${index + 1}` : '?'
+    ).join(', ');
+
+    const result = await query(
+        `DELETE FROM warehouse_tasks WHERE id IN (${placeholders})`,
+        taskIds
+    );
+
+    return {
+        success: true,
+        deletedCount: result.rowCount || result.changes || taskIds.length
+    };
 }
 
 module.exports = {
@@ -334,5 +336,7 @@ module.exports = {
     startTask,
     listTasks,
     failTask,
-    getAllTasks
+    getAllTasks,
+    deleteTask,
+    deleteManyTasks
 };
