@@ -254,10 +254,108 @@ async function getActiveWarehouseOrdersCount() {
     return parseInt(row.count || 0);
 }
 
+/**
+ * List warehouse orders with filters and pagination
+ */
+async function listWarehouseOrders(filters = {}, pagination = {}) {
+    const { status, _start = 0, _end = 25 } = filters;
+    const limit = _end - _start;
+    const offset = _start;
+
+    // Build WHERE clause
+    let whereConditions = [];
+    let params = [];
+    let paramIndex = 1;
+
+    if (status) {
+        whereConditions.push(`status = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
+        params.push(status);
+        paramIndex++;
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countResult = await queryOne(
+        `SELECT COUNT(*) as count FROM warehouse_orders ${whereClause}`,
+        params
+    );
+    const total = parseInt(countResult.count || 0);
+
+    // Get paginated results
+    const limitClause = DB_TYPE === 'postgresql'
+        ? `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`
+        : `LIMIT ? OFFSET ?`;
+
+    const result = await query(
+        `SELECT * FROM warehouse_orders ${whereClause} ORDER BY created_at DESC ${limitClause}`,
+        [...params, limit, offset]
+    );
+
+    const orders = result.rows.map(row => ({
+        ...row,
+        ortec_data: typeof row.ortec_data === 'string' ? JSON.parse(row.ortec_data) : row.ortec_data
+    }));
+
+    return { orders, total };
+}
+
+/**
+ * Retry a failed warehouse order
+ */
+async function retryWarehouseOrder(warehouseOrderId) {
+    const order = await getWarehouseOrder(warehouseOrderId);
+    if (!order) {
+        throw new Error('Warehouse order not found');
+    }
+
+    // Reset order status to ACTIVE
+    if (DB_TYPE === 'postgresql') {
+        await query(
+            `UPDATE warehouse_orders 
+       SET status = $1, completed_at = NULL
+       WHERE id = $2`,
+            ['ACTIVE', warehouseOrderId]
+        );
+    } else {
+        await query(
+            `UPDATE warehouse_orders 
+       SET status = ?, completed_at = NULL
+       WHERE id = ?`,
+            ['ACTIVE', warehouseOrderId]
+        );
+    }
+
+    // Reset all tasks to PENDING
+    if (DB_TYPE === 'postgresql') {
+        await query(
+            `UPDATE warehouse_tasks 
+       SET status = $1, started_at = NULL, completed_at = NULL
+       WHERE warehouse_order_id = $2`,
+            ['PENDING', warehouseOrderId]
+        );
+    } else {
+        await query(
+            `UPDATE warehouse_tasks 
+       SET status = ?, started_at = NULL, completed_at = NULL
+       WHERE warehouse_order_id = ?`,
+            ['PENDING', warehouseOrderId]
+        );
+    }
+
+    return {
+        warehouseOrderId,
+        status: 'ACTIVE',
+        message: 'Order and tasks reset to PENDING'
+    };
+}
+
 module.exports = {
     createWarehouseOrder,
     getWarehouseOrder,
     getWarehouseTasks,
     getTaskBySequence,
-    getActiveWarehouseOrdersCount
+    getActiveWarehouseOrdersCount,
+    listWarehouseOrders,
+    retryWarehouseOrder
 };

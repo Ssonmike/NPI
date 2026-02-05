@@ -125,8 +125,94 @@ async function startTask(taskId) {
     return task;
 }
 
+/**
+ * List tasks with filters and pagination
+ */
+async function listTasks(filters = {}, pagination = {}) {
+    const { status, warehouse_order_id, _start = 0, _end = 25 } = filters;
+    const limit = _end - _start;
+    const offset = _start;
+
+    // Build WHERE clause
+    let whereConditions = [];
+    let params = [];
+    let paramIndex = 1;
+
+    if (status) {
+        whereConditions.push(`status = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
+        params.push(status);
+        paramIndex++;
+    }
+
+    if (warehouse_order_id) {
+        whereConditions.push(`warehouse_order_id = ${DB_TYPE === 'postgresql' ? `$${paramIndex}` : '?'}`);
+        params.push(warehouse_order_id);
+        paramIndex++;
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countResult = await queryOne(
+        `SELECT COUNT(*) as count FROM warehouse_tasks ${whereClause}`,
+        params
+    );
+    const total = parseInt(countResult.count || 0);
+
+    // Get paginated results
+    const limitClause = DB_TYPE === 'postgresql'
+        ? `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`
+        : `LIMIT ? OFFSET ?`;
+
+    const result = await query(
+        `SELECT * FROM warehouse_tasks ${whereClause} ORDER BY created_at DESC ${limitClause}`,
+        [...params, limit, offset]
+    );
+
+    const tasks = result.rows.map(row => ({
+        ...row,
+        block_data: typeof row.block_data === 'string' ? JSON.parse(row.block_data) : row.block_data
+    }));
+
+    return { tasks, total };
+}
+
+/**
+ * Mark task as failed
+ */
+async function failTask(taskId) {
+    const task = await getTask(taskId);
+    if (!task) {
+        throw new Error('Task not found');
+    }
+
+    // Update task status
+    if (DB_TYPE === 'postgresql') {
+        await query(
+            `UPDATE warehouse_tasks 
+       SET status = $1, completed_at = NOW()
+       WHERE id = $2`,
+            ['FAILED', taskId]
+        );
+    } else {
+        await query(
+            `UPDATE warehouse_tasks 
+       SET status = ?, completed_at = datetime('now')
+       WHERE id = ?`,
+            ['FAILED', taskId]
+        );
+    }
+
+    return {
+        taskId,
+        status: 'FAILED'
+    };
+}
+
 module.exports = {
     getTask,
     completeTask,
-    startTask
+    startTask,
+    listTasks,
+    failTask
 };

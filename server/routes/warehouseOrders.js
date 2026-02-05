@@ -5,10 +5,38 @@ const {
     createWarehouseOrder,
     getWarehouseOrder,
     getWarehouseTasks,
-    getTaskBySequence
+    getTaskBySequence,
+    listWarehouseOrders,
+    retryWarehouseOrder
 } = require('../controllers/warehouseOrderController');
 const { generateTaskUrls } = require('../utils/urlGenerator');
 const logger = require('../utils/logger');
+
+/**
+ * GET /api/warehouse-orders
+ * List all warehouse orders with filters and pagination
+ */
+router.get('/', async (req, res, next) => {
+    try {
+        const filters = {
+            status: req.query.status,
+            _start: parseInt(req.query._start || 0),
+            _end: parseInt(req.query._end || 25),
+        };
+
+        logger.info('Listing warehouse orders with filters:', filters);
+
+        const { orders, total } = await listWarehouseOrders(filters);
+
+        // Set total count header for React Admin
+        res.set('X-Total-Count', total);
+        res.set('Access-Control-Expose-Headers', 'X-Total-Count');
+
+        res.json(orders);
+    } catch (err) {
+        next(err);
+    }
+});
 
 /**
  * POST /api/warehouse-orders
@@ -89,6 +117,33 @@ router.get('/:id/tasks/:sequence', async (req, res, next) => {
             url: `/${id}/task/${task.id}`
         });
     } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * POST /api/warehouse-orders/:id/retry
+ * Retry a failed warehouse order
+ */
+router.post('/:id/retry', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        logger.info('Retrying warehouse order:', id);
+
+        const result = await retryWarehouseOrder(id);
+
+        res.json({
+            success: true,
+            ...result
+        });
+    } catch (err) {
+        if (err.message === 'Warehouse order not found') {
+            return res.status(404).json({
+                success: false,
+                error: 'Warehouse order not found'
+            });
+        }
         next(err);
     }
 });

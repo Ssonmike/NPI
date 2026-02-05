@@ -17,6 +17,7 @@ const warehouseOrdersRoutes = require('./routes/warehouseOrders');
 const tasksRoutes = require('./routes/tasks');
 const healthRoutes = require('./routes/health');
 const blockBuilderRoutes = require('./routes/blockBuilder');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ app.use('/api/warehouse-orders', warehouseOrdersRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/block-builder', blockBuilderRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Serve testing tools
 app.get('/tools/pallet-generator', (req, res) => {

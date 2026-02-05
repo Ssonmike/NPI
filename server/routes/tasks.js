@@ -1,9 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const { completeTask, getTask } = require('../controllers/taskController');
+const { completeTask, getTask, listTasks, failTask } = require('../controllers/taskController');
 const { getWarehouseTasks } = require('../controllers/warehouseOrderController');
 const { generateTaskUrl } = require('../utils/urlGenerator');
 const logger = require('../utils/logger');
+
+/**
+ * GET /api/tasks
+ * List all tasks with filters and pagination
+ */
+router.get('/', async (req, res, next) => {
+    try {
+        const filters = {
+            status: req.query.status,
+            warehouse_order_id: req.query.warehouse_order_id,
+            _start: parseInt(req.query._start || 0),
+            _end: parseInt(req.query._end || 25),
+        };
+
+        logger.info('Listing tasks with filters:', filters);
+
+        const { tasks, total } = await listTasks(filters);
+
+        // Set total count header for React Admin
+        res.set('X-Total-Count', total);
+        res.set('Access-Control-Expose-Headers', 'X-Total-Count');
+
+        res.json(tasks);
+    } catch (err) {
+        next(err);
+    }
+});
 
 /**
  * POST /api/tasks/:taskId/complete
@@ -73,6 +100,33 @@ router.get('/:taskId', async (req, res, next) => {
             serialNumber: task.serial_number
         });
     } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * POST /api/tasks/:taskId/fail
+ * Mark a task as failed
+ */
+router.post('/:taskId/fail', async (req, res, next) => {
+    try {
+        const { taskId } = req.params;
+
+        logger.info('Failing task:', taskId);
+
+        const result = await failTask(taskId);
+
+        res.json({
+            success: true,
+            ...result
+        });
+    } catch (err) {
+        if (err.message === 'Task not found') {
+            return res.status(404).json({
+                success: false,
+                error: 'Task not found'
+            });
+        }
         next(err);
     }
 });
